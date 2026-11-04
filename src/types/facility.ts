@@ -1,0 +1,11 @@
+export interface Facility {
+  _id: string;
+  name: string;
+  category: string;
+  image: string;
+  location: string;
+  pricePerHour: number;
+  capacity: number;
+  securityDeposit: number;
+  description: string;
+}

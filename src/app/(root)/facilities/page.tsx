@@ -1,3 +1,4 @@
+import AllFacilities from "@/components/AllFacilities";
 import Link from "next/link";
 
 export default function Page() {
@@ -8,6 +9,7 @@ export default function Page() {
       <Link href="/" className="mt-6 inline-block text-primary underline">
         Back to home
       </Link>
+      <AllFacilities></AllFacilities>
     </main>
   );
 }

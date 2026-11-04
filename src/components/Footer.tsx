@@ -194,7 +194,7 @@ export default function Footer() {
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-slate-800 pt-6 text-center sm:flex-row">
 
           <p className="text-sm text-slate-400">
-            © {new Date().getFullYear()} StudioSpace.
+            © 2026 StudioSpace.
             All rights reserved.
           </p>
 
