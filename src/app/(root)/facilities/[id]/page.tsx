@@ -1,10 +1,19 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, MapPin, Users, ShieldCheck } from "lucide-react";
+import { ArrowLeft, MapPin, Users } from "lucide-react";
+import BookingForm from "@/components/BookingForm";
 import type { Facility } from "@/types/facility";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+
+const categoryGuides: Record<string, string> = {
+  "Photo Studio": "Planning a portrait session, product shoot, or editorial project? Share your shot list with the studio and confirm the available lighting, backdrops, and setup space before booking.",
+  "Film Stage": "For interviews, short films, or commercial shoots, discuss your production schedule and set requirements with the studio. Confirm sound conditions, equipment access, and time for setup and breakdown.",
+  "Podcast Lounge": "For a solo recording, conversation, or interview series, confirm the microphone setup, number of recording positions, and recording format with the studio before your session.",
+  "Music Suite": "Whether you are planning a rehearsal, recording session, or music project, discuss your instruments and technical requirements with the studio. Confirm which equipment is included and what you need to bring.",
+  Workshop: "For a creative workshop or group session, share your activity plan and expected attendance with the studio. Confirm seating, work surfaces, and any materials or equipment your participants will need.",
+};
 
 export default async function FacilityDetailsPage({
   params,
@@ -40,21 +49,52 @@ export default async function FacilityDetailsPage({
           <section className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8" aria-labelledby="about-studio">
             <h2 id="about-studio" className="text-2xl font-bold text-slate-900">About this studio</h2>
             <p className="mt-4 whitespace-pre-line leading-relaxed text-slate-600">{facility.description}</p>
+            <p className="mt-4 leading-relaxed text-slate-600">
+              {facility.name} is listed as a {facility.category.toLowerCase()} in {facility.location},
+              with space for up to {facility.capacity} people. The listed rate is ${facility.pricePerHour} per hour,
+              with a security deposit of ${facility.securityDeposit}. Use these details to plan your team size,
+              session length, and budget.
+            </p>
             <div className="mt-8 flex items-center gap-4 border-t border-slate-100 pt-6">
               <span className="flex size-12 items-center justify-center rounded-2xl bg-green-50 text-green-700"><Users className="size-5" aria-hidden="true" /></span>
               <div><p className="font-semibold text-slate-900">Up to {facility.capacity} people</p><p className="mt-1 text-sm text-slate-500">Maximum studio capacity</p></div>
             </div>
-          </section>
-          <aside className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8" aria-label="Studio pricing">
-            <p className="text-sm text-slate-500">Hourly rate</p>
-            <p className="mt-2 text-4xl font-bold tracking-tight text-slate-900">${facility.pricePerHour}<span className="text-base font-normal text-slate-500"> / hour</span></p>
-            <div className="mt-6 flex items-center justify-between gap-3 border-t border-slate-100 pt-5 text-sm">
-              <span className="flex items-center gap-2 text-slate-600"><ShieldCheck className="size-4 text-green-600" aria-hidden="true" />Security deposit</span>
-              <span className="font-semibold text-slate-900">${facility.securityDeposit}</span>
+            <div className="mt-8 space-y-7 border-t border-slate-100 pt-7">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900">Plan your creative session</h3>
+                <p className="mt-3 leading-relaxed text-slate-600">
+                  {categoryGuides[facility.category] ?? "Share your project requirements with the studio before booking. Confirm the layout, equipment, and facilities you need so you can prepare for your session."}
+                </p>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900">Location & arrival</h3>
+                <p className="mt-3 leading-relaxed text-slate-600">
+                  The listed location is {facility.location}. Confirm the exact address, entry instructions,
+                  parking, and any accessibility needs with the studio before you travel. Include time for
+                  equipment loading and setup when choosing your booking hours.
+                </p>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900">Rates & booking details</h3>
+                <p className="mt-3 leading-relaxed text-slate-600">
+                  Studio rental is listed at ${facility.pricePerHour} per hour. The booking form estimates
+                  your rental cost from your selected start and end times and adds the listed
+                  ${facility.securityDeposit} security deposit. Confirm deposit terms, equipment charges,
+                  overtime rates, and cancellation conditions with the studio before finalizing your plans.
+                </p>
+              </div>
+              <div className="rounded-2xl bg-green-50 p-5">
+                <h3 className="font-semibold text-green-950">Before you book</h3>
+                <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-relaxed text-green-900">
+                  <li>Keep your total group within the listed capacity of {facility.capacity} people.</li>
+                  <li>Allow time for setup, your session, and packing away.</li>
+                  <li>Confirm equipment, amenities, and any studio rules directly with the host.</li>
+                  <li>Submit your preferred date and time; availability requires confirmation.</li>
+                </ul>
+              </div>
             </div>
-            <p className="mt-5 text-sm leading-relaxed text-slate-500">Explore more studios to find the right space for your next project.</p>
-            <Link href="/facilities" className="mt-6 flex min-h-12 items-center justify-center rounded-full bg-green-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-green-700 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-green-600">Browse all studios</Link>
-          </aside>
+          </section>
+          <BookingForm facility={facility} />
         </div>
       </div>
     </main>

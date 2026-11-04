@@ -1,9 +1,10 @@
 import React from 'react';
+import MyBookings from '../_components/MyBookings';
 
 const MyBookingPage = () => {
     return (
         <div>
-            my booking page
+            <MyBookings></MyBookings>
         </div>
     );
 };

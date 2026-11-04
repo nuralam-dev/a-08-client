@@ -4,11 +4,26 @@ import { navLinks } from "@/lib/navigation";
 import { Button } from "@/components/ui/button";
 import { ArrowUpRight, AudioLines, Menu, X } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useRef, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { Suspense, useRef, useState } from "react";
 
 export default function Navbar() {
+  return (
+    <Suspense fallback={<NavbarView pathname="" />}>
+      <NavbarWithPathname />
+    </Suspense>
+  );
+}
+
+function NavbarWithPathname() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const query = searchParams.toString();
+  const returnTo = `${pathname}${query ? `?${query}` : ""}`;
+  return <NavbarView pathname={pathname} loginHref={`/login?next=${encodeURIComponent(returnTo)}`} />;
+}
+
+function NavbarView({ pathname, loginHref = "/login" }: { pathname: string; loginHref?: string }) {
   const [isOpen, setIsOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const isActive = (href: string) =>
@@ -59,7 +74,7 @@ export default function Navbar() {
           <div className="hidden xl:block">
             <Button
               className="h-11 gap-3 rounded-full px-6 font-semibold shadow-sm"
-              render={<Link href="/login" />}
+              render={<Link href={loginHref} />}
               nativeButton={false}
             >
               Login <ArrowUpRight className="size-4" aria-hidden="true" />
@@ -104,7 +119,7 @@ export default function Navbar() {
           <div className="mt-4 border-t border-border/60 pt-4">
             <Button
               className="h-11 w-full gap-2 rounded-xl font-semibold"
-              render={<Link href="/login" />}
+              render={<Link href={loginHref} />}
               nativeButton={false}
               onClick={() => setIsOpen(false)}
             >

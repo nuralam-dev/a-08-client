@@ -81,7 +81,7 @@ export default function Banner() {
         <CarouselContent className="ml-0">
           {slides.map((slide, index) => (
             <CarouselItem key={slide.id} className="pl-0" aria-label={`${index + 1} of ${slides.length}`} inert={current !== index}>
-              <div className="relative isolate flex min-h-[690px] flex-col justify-between px-6 pb-28 pt-10 sm:px-10 sm:pt-14 lg:min-h-[650px] lg:px-14 lg:pt-16">
+              <div className="relative isolate flex min-h-[570px] flex-col justify-between px-6 pb-24 pt-7 sm:px-10 sm:pt-8 lg:min-h-[530px] lg:px-14 lg:pt-10">
                 <div className="absolute inset-0 -z-20 lg:left-[36%]">
                   <Image
                     src={slide.image}
@@ -96,17 +96,17 @@ export default function Banner() {
                 <div className="absolute inset-0 -z-10 bg-linear-to-t from-[#141c19] via-transparent to-[#141c19]/10" />
 
                 <div className="max-w-2xl">
-                  <div className="mb-7 inline-flex items-center gap-2.5 rounded-full border border-white/15 bg-white/5 px-3.5 py-2 backdrop-blur-md">
+                  <div className="mb-5 inline-flex items-center gap-2.5 rounded-full border border-white/15 bg-white/5 px-3.5 py-2 backdrop-blur-md">
                     <span className="size-1.5 rounded-full bg-lime-300" aria-hidden="true" />
                     <span className="text-[10px] font-medium tracking-[0.14em] text-white/85 uppercase sm:text-xs">{slide.label}</span>
                   </div>
-                  <h1 className="text-4xl leading-[1.08] font-semibold tracking-tight sm:text-6xl lg:text-7xl">
+                  <h1 className="text-4xl leading-[1.08] font-semibold tracking-tight sm:text-5xl lg:text-6xl">
                     {slide.title}
                     <span className="mt-1 block text-lime-300">{slide.accent}</span>
                   </h1>
-                  <p className="mt-6 max-w-md text-base leading-relaxed text-white/65 sm:text-lg">{slide.description}</p>
+                  <p className="mt-4 max-w-md text-base leading-relaxed text-white/65 sm:text-lg">{slide.description}</p>
 
-                  <div className="mt-8 flex flex-col gap-3 min-[400px]:flex-row">
+                  <div className="mt-6 flex flex-col gap-3 min-[400px]:flex-row">
                     <Link
                       href="/facilities"
                       className="group inline-flex min-h-12 items-center justify-center gap-5 rounded-full bg-lime-300 px-6 text-sm font-semibold text-[#141c19] outline-none transition-colors hover:bg-lime-200 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-[#141c19]"
@@ -122,7 +122,7 @@ export default function Banner() {
                   </div>
                 </div>
 
-                <div className="mt-10 flex items-end justify-between gap-6">
+                <div className="mt-6 flex items-end justify-between gap-6">
                   <div className="flex flex-wrap gap-x-5 gap-y-3 text-xs text-white/60 sm:gap-x-6">
                     {categories.map(({ name, icon: Icon }) => (
                       <span key={name} className="inline-flex items-center gap-2">
@@ -131,7 +131,7 @@ export default function Banner() {
                     ))}
                   </div>
                   <div className="hidden max-w-64 rounded-2xl border border-white/20 bg-white/10 p-5 backdrop-blur-xl lg:block">
-                    <ArrowDownRight className="mb-5 size-6 text-lime-300" aria-hidden="true" />
+                    <ArrowDownRight className="mb-3 size-6 text-lime-300" aria-hidden="true" />
                     <p className="text-sm font-semibold">{slide.category}</p>
                     <p className="mt-1 text-xs leading-relaxed text-white/65">{slide.detail}</p>
                   </div>
