@@ -1,6 +1,7 @@
 import Banner from "@/components/Banner";
 import FeaturedFacilities from "@/components/FeaturedFacilities";
 import PopularStudios from "@/components/PopularStudios";
+import WhyChooseStudioSpace from "@/components/WhyChooseStudioSpace";
 import { Suspense } from "react";
 
 const page = () => {
@@ -17,6 +18,7 @@ const page = () => {
       >
         <FeaturedFacilities />
       </Suspense>
+      <WhyChooseStudioSpace></WhyChooseStudioSpace>
     </div>
   );
 };
