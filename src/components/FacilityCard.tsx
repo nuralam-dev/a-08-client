@@ -80,13 +80,12 @@ export default function FacilityCard({
 
         {/* View Details Button */}
         <Button
-        
+          render={<Link href={`/facilities/${facility._id}`} />}
+          nativeButton={false}
           className="w-full bg-green-600 text-white hover:bg-green-700"
         >
-          <Link href={`/facilities/${facility._id}`}>
             View Details
             <FaArrowRight className="ml-2" />
-          </Link>
         </Button>
       </CardContent>
     </Card>
