@@ -31,6 +31,8 @@ export default function FacilityCard({
       <div className="relative h-56 w-full">
         <Image
           src={facility.image}
+          // The external image host times out through Next's image optimizer.
+          unoptimized
           alt={facility.name}
           fill
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"

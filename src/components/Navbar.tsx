@@ -1,95 +1,118 @@
 "use client";
 
 import { navLinks } from "@/lib/navigation";
-
 import { Button } from "@/components/ui/button";
-import { Menu, X } from "lucide-react";
+import { ArrowUpRight, AudioLines, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 export default function Navbar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const isActive = (href: string) =>
+    pathname === href || (href !== "/" && pathname.startsWith(`${href}/`));
 
   return (
-    <header className="sticky top-0 z-50 border-b bg-background">
-      <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
-        {/* Logo */}
-        <Link
-          href="/"
-          className="text-2xl font-bold"
-          onClick={() => setIsOpen(false)}
-        >
-          Studio<span className="text-primary">Space</span>
-        </Link>
+    <header
+      className="sticky top-0 z-50 border-b border-border/60 bg-background/90 shadow-[0_4px_24px_-16px_rgba(0,0,0,0.18)] backdrop-blur-xl"
+      onKeyDown={(event) => {
+        if (event.key === "Escape" && isOpen) {
+          setIsOpen(false);
+          menuButtonRef.current?.focus();
+        }
+      }}
+    >
+      <nav aria-label="Main navigation" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex h-20 items-center justify-between gap-4">
+          <Link
+            href="/"
+            className="group flex shrink-0 items-center gap-2.5 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4"
+            onClick={() => setIsOpen(false)}
+          >
+            <span className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm transition-transform motion-safe:group-hover:-rotate-6">
+              <AudioLines className="size-5" aria-hidden="true" />
+            </span>
+            <span className="text-xl font-bold tracking-tight">
+              Studio<span className="font-normal text-muted-foreground">Space</span>
+            </span>
+          </Link>
 
-        {/* Desktop Navigation */}
-        <div className="hidden items-center gap-6 lg:flex">
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`text-sm font-medium transition-colors hover:text-primary ${
-                pathname === link.href
-                  ? "text-primary"
-                  : "text-muted-foreground"
-              }`}
-            >
-              {link.name}
-            </Link>
-          ))}
-        </div>
-
-        {/* Desktop Login Button */}
-        <div className="hidden lg:block">
-          <Button render={<Link href="/login" />} nativeButton={false}>
-            Login
-          </Button>
-        </div>
-
-        {/* Mobile Menu Button */}
-        <button
-          type="button"
-          className="rounded-md p-2 lg:hidden"
-          onClick={() => setIsOpen(!isOpen)}
-          aria-label={isOpen ? "Close menu" : "Open menu"}
-          aria-expanded={isOpen}
-        >
-          {isOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
-      </nav>
-
-      {/* Mobile Navigation */}
-      {isOpen && (
-        <div className="border-t bg-background px-4 py-4 lg:hidden">
-          <div className="flex flex-col gap-4">
+          <div className="hidden items-center gap-1 rounded-full border border-border/60 bg-muted/60 p-1 xl:flex">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                onClick={() => setIsOpen(false)}
-                className={`text-sm font-medium ${
-                  pathname === link.href
-                    ? "text-primary"
-                    : "text-muted-foreground"
+                aria-current={isActive(link.href) ? "page" : undefined}
+                className={`rounded-full px-4 py-2.5 text-sm font-medium whitespace-nowrap outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring ${
+                  isActive(link.href)
+                    ? "bg-background text-foreground shadow-sm ring-1 ring-border/60"
+                    : "text-muted-foreground hover:bg-background/70 hover:text-foreground"
                 }`}
               >
                 {link.name}
               </Link>
             ))}
+          </div>
 
+          <div className="hidden xl:block">
             <Button
-              className="w-full"
+              className="h-11 gap-3 rounded-full px-6 font-semibold shadow-sm"
+              render={<Link href="/login" />}
+              nativeButton={false}
+            >
+              Login <ArrowUpRight className="size-4" aria-hidden="true" />
+            </Button>
+          </div>
+
+          <button
+            ref={menuButtonRef}
+            type="button"
+            className="flex size-11 items-center justify-center rounded-xl border border-border bg-background text-foreground outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring xl:hidden"
+            onClick={() => setIsOpen(!isOpen)}
+            aria-label={isOpen ? "Close menu" : "Open menu"}
+            aria-expanded={isOpen}
+            aria-controls="mobile-navigation"
+          >
+            {isOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        </div>
+
+        <div id="mobile-navigation" hidden={!isOpen} className="border-t border-border/60 pb-5 pt-4 xl:hidden">
+          <p className="mb-3 px-3 text-[10px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
+            Explore StudioSpace
+          </p>
+          <div className="flex flex-col gap-1">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setIsOpen(false)}
+                aria-current={isActive(link.href) ? "page" : undefined}
+                className={`flex items-center justify-between rounded-xl px-4 py-3 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring ${
+                  isActive(link.href)
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                {link.name}
+                {isActive(link.href) && <span className="size-1.5 rounded-full bg-current" aria-hidden="true" />}
+              </Link>
+            ))}
+          </div>
+          <div className="mt-4 border-t border-border/60 pt-4">
+            <Button
+              className="h-11 w-full gap-2 rounded-xl font-semibold"
               render={<Link href="/login" />}
               nativeButton={false}
               onClick={() => setIsOpen(false)}
             >
-              Login
+              Login <ArrowUpRight className="size-4" aria-hidden="true" />
             </Button>
           </div>
         </div>
-      )}
+      </nav>
     </header>
   );
 }

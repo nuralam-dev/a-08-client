@@ -1,4 +1,5 @@
 import Banner from "@/components/Banner";
+import CallToAction from "@/components/CallToAction";
 import FeaturedFacilities from "@/components/FeaturedFacilities";
 import PopularStudios from "@/components/PopularStudios";
 import Testimonials from "@/components/Testimonials";
@@ -21,6 +22,7 @@ const page = () => {
       </Suspense>
       <WhyChooseStudioSpace></WhyChooseStudioSpace>
       <Testimonials></Testimonials>
+      <CallToAction></CallToAction>
     </div>
   );
 };
