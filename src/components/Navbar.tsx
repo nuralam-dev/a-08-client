@@ -1,18 +1,12 @@
 "use client";
 
+import { navLinks } from "@/lib/navigation";
+
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-
-const navLinks = [
-  { name: "Home", href: "/" },
-  { name: "All Facilities", href: "/facilities" },
-  { name: "My Bookings", href: "/my-bookings" },
-  { name: "Add Facility", href: "/add-facility" },
-  { name: "Manage Facilities", href: "/manage-facilities" },
-];
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -49,8 +43,8 @@ export default function Navbar() {
 
         {/* Desktop Login Button */}
         <div className="hidden lg:block">
-          <Button>
-            <Link href="/login">Login</Link>
+          <Button render={<Link href="/login" />} nativeButton={false}>
+            Login
           </Button>
         </div>
 
@@ -85,10 +79,13 @@ export default function Navbar() {
               </Link>
             ))}
 
-            <Button className="w-full">
-              <Link href="/login" onClick={() => setIsOpen(false)}>
-                Login
-              </Link>
+            <Button
+              className="w-full"
+              render={<Link href="/login" />}
+              nativeButton={false}
+              onClick={() => setIsOpen(false)}
+            >
+              Login
             </Button>
           </div>
         </div>

@@ -1,9 +1,10 @@
 import React from 'react';
+import AddFacilityForm from '../_components/AddFacilityForm';
 
 const AddFacilityPage = () => {
     return (
         <div>
-            add facility
+            <AddFacilityForm></AddFacilityForm>
         </div>
     );
 };

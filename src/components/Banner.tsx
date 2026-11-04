@@ -96,21 +96,18 @@ export default function Banner() {
                     </p>
 
                     <div className="flex flex-wrap gap-3">
-                      <Button  size="lg">
-                        <Link href="/facilities">
-                          Explore Studios
-                        </Link>
+                      <Button size="lg" render={<Link href="/facilities" />} nativeButton={false}>
+                        Explore Studios
                       </Button>
 
                       <Button
-                       
+                        render={<Link href="/dashboard/add-facility" />}
+                        nativeButton={false}
                         size="lg"
                         variant="outline"
                         className="border-white bg-transparent text-white hover:bg-white hover:text-black"
                       >
-                        <Link href="/add-facility">
-                          List Your Studio
-                        </Link>
+                        List Your Studio
                       </Button>
                     </div>
                   </div>

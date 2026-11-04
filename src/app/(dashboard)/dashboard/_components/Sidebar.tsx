@@ -26,12 +26,12 @@ const menuItems = [
   },
   {
     name: "Add Facility",
-    href: "/add-facility",
+    href: "/dashboard/add-facility",
     icon: FaRegSquarePlus,
   },
   {
     name: "Manage Facilities",
-    href: "/manage-facilities",
+    href: "/my-facility",
     icon: FaGear,
   },
 ];

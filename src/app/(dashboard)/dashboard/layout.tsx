@@ -1,13 +1,53 @@
-import React from "react";
+
+"use client";
+
+import { useState, type ReactNode } from "react";
+import { FaBars } from "react-icons/fa6";
 import Sidebar from "./_components/Sidebar";
 
-const layout = ({ children }: { children: React.ReactNode }) => {
+
+interface DashboardLayoutProps {
+  children: ReactNode;
+}
+
+export default function DashboardLayout({
+  children,
+}: DashboardLayoutProps) {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
-    <div className="flex min-h-screen w-full bg-[#f8f9fb] mt-20">
-      <Sidebar></Sidebar>
-      <main className="min-w-0 flex-1">{children}</main>
+    <div className="min-h-screen bg-slate-50">
+      {/* Fixed Sidebar */}
+     
+      <Sidebar
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+      />
+
+      {/* Main Content */}
+      <div className="min-w-0 lg:ml-72">
+        {/* Mobile Header */}
+        <div className="flex items-center gap-4 border-b bg-white p-4 lg:hidden">
+          <button
+            type="button"
+            onClick={() => setIsOpen(true)}
+            aria-label="Open sidebar"
+          >
+            <FaBars size={22} />
+          </button>
+
+          <h2 className="font-semibold">
+            StudioSpace Dashboard
+          </h2>
+        </div>
+
+        {/* Dashboard Page Content */}
+        <main className="min-h-screen p-4 sm:p-6 lg:p-10">
+          <div className="mx-auto w-full max-w-7xl">
+            {children}
+          </div>
+        </main>
+      </div>
     </div>
   );
-};
-
-export default layout;
+}

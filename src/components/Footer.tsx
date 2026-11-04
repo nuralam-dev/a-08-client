@@ -1,5 +1,6 @@
-
 "use client";
+
+import { navLinks } from "@/lib/navigation";
 
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
@@ -18,14 +19,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 // Quick navigation links
-const quickLinks = [
-  { name: "Home", href: "/" },
-  { name: "All Facilities", href: "/facilities" },
-  { name: "My Bookings", href: "/my-bookings" },
-  { name: "Add Facility", href: "/add-facility" },
-  { name: "Manage Facilities", href: "/manage-facilities" },
-];
-
 // Studio categories
 const categories = [
   { name: "Photography Studio", value: "Photo Studio" },
@@ -126,7 +119,7 @@ export default function Footer() {
             </h3>
 
             <ul className="space-y-3">
-              {quickLinks.map((link) => (
+              {navLinks.map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}
