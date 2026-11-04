@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, MapPin, Users } from "lucide-react";
 import BookingForm from "@/components/BookingForm";
 import type { Facility } from "@/types/facility";
+import { requireSession } from "@/lib/require-session";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -21,6 +22,7 @@ export default async function FacilityDetailsPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  await requireSession(`/facilities/${encodeURIComponent(id)}`);
 
   // The individual facility endpoint currently returns placeholder text.
   // Resolve the selected studio from the working collection endpoint.

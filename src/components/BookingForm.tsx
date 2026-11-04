@@ -7,6 +7,8 @@ import type { Facility } from "@/types/facility";
 import { CalendarDays, Loader2, ShieldCheck } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
+import { authClient } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 const money = (amount: number) =>
@@ -15,6 +17,7 @@ const money = (amount: number) =>
   );
 
 export default function BookingForm({ facility }: { facility: Facility }) {
+  const router = useRouter();
   const [date, setDate] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
@@ -48,6 +51,12 @@ export default function BookingForm({ facility }: { facility: Facility }) {
     const fields = new FormData(form);
     setLoading(true);
     try {
+      const session = await authClient.getSession();
+      if (session.error) throw new Error("Unable to verify your sign-in. Please try again.");
+      if (!session.data) {
+        router.replace(`/login?next=${encodeURIComponent(`/facilities/${facility._id}`)}`);
+        return;
+      }
       const response = await fetch(`${API_URL}/facilities/booking`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

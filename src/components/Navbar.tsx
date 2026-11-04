@@ -1,8 +1,8 @@
 "use client";
 
 import { navLinks } from "@/lib/navigation";
-import { Button } from "@/components/ui/button";
-import { ArrowUpRight, AudioLines, Menu, X } from "lucide-react";
+import AccountMenu from "@/components/auth/AccountMenu";
+import { AudioLines, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense, useRef, useState } from "react";
@@ -71,14 +71,8 @@ function NavbarView({ pathname, loginHref = "/login" }: { pathname: string; logi
             ))}
           </div>
 
-          <div className="hidden xl:block">
-            <Button
-              className="h-11 gap-3 rounded-full px-6 font-semibold shadow-sm"
-              render={<Link href={loginHref} />}
-              nativeButton={false}
-            >
-              Login <ArrowUpRight className="size-4" aria-hidden="true" />
-            </Button>
+          <div className="ml-auto xl:ml-0">
+            <AccountMenu loginHref={loginHref} />
           </div>
 
           <button
@@ -115,16 +109,6 @@ function NavbarView({ pathname, loginHref = "/login" }: { pathname: string; logi
                 {isActive(link.href) && <span className="size-1.5 rounded-full bg-current" aria-hidden="true" />}
               </Link>
             ))}
-          </div>
-          <div className="mt-4 border-t border-border/60 pt-4">
-            <Button
-              className="h-11 w-full gap-2 rounded-xl font-semibold"
-              render={<Link href={loginHref} />}
-              nativeButton={false}
-              onClick={() => setIsOpen(false)}
-            >
-              Login <ArrowUpRight className="size-4" aria-hidden="true" />
-            </Button>
           </div>
         </div>
       </nav>

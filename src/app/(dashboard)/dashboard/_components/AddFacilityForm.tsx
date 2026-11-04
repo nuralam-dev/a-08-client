@@ -3,6 +3,8 @@
 
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
+import { authClient } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,6 +37,7 @@ const inputClass =
   "h-12 w-full rounded-2xl border-gray-200 bg-white px-5 text-base text-gray-900 placeholder:text-gray-400 focus-visible:border-green-500 focus-visible:ring-green-500/20";
 
 export default function AddFacilityForm() {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [category, setCategory] = useState("");
 
@@ -82,6 +85,13 @@ export default function AddFacilityForm() {
 
     try {
       setLoading(true);
+
+      const session = await authClient.getSession();
+      if (session.error) throw new Error("Unable to verify your sign-in");
+      if (!session.data) {
+        router.replace("/login?next=%2Fdashboard%2Fadd-facility");
+        return;
+      }
 
       // POST data to Express.js backend
       const response = await fetch(
