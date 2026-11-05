@@ -14,8 +14,8 @@ async function handleRequest(request: NextRequest, context: { params: Promise<{ 
   const featured = path.length === 2 && path[0] === "facilities" && path[1] === "featured";
   const publicRead = isRead && (facilityRoot || facilityId || featured);
   const allowed = publicRead || (facilityRoot && method === "POST") || (mine && isRead) ||
-    (bookings && (isRead || method === "POST")) || (facilityId && ["PATCH", "DELETE"].includes(method)) ||
-    (bookingId && method === "DELETE");
+    (bookings && (isRead || method === "POST")) || (facilityId && ["PATCH", "PUT", "DELETE"].includes(method)) ||
+    (bookingId && (isRead || method === "DELETE"));
   if (!allowed) return Response.json({ message: "Route not found." }, { status: 404 });
 
   const privateHeaders = { "Cache-Control": "private, no-store" };
@@ -91,4 +91,4 @@ async function handleRequest(request: NextRequest, context: { params: Promise<{ 
   }
 }
 
-export { handleRequest as GET, handleRequest as POST, handleRequest as PATCH, handleRequest as DELETE };
+export { handleRequest as GET, handleRequest as POST, handleRequest as PATCH, handleRequest as PUT, handleRequest as DELETE, handleRequest as HEAD };

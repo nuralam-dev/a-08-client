@@ -13,6 +13,14 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 const API_URL = "/api/backend";
+const bookingTimeZone = process.env.NEXT_PUBLIC_BOOKING_TIME_ZONE || "Asia/Dhaka";
+function studioMinute() {
+  const parts = Object.fromEntries(new Intl.DateTimeFormat("sv-SE", {
+    timeZone: bookingTimeZone, year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+  }).formatToParts(new Date()).map(({ type, value }) => [type, value]));
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
+}
 const money = (amount: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(
     amount,
@@ -21,8 +29,7 @@ const money = (amount: number) =>
 export default function BookingForm({ facility }: { facility: Facility }) {
   const router = useRouter();
   const { data: currentSession, isPending } = authClient.useSession();
-  const now = new Date();
-  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const today = studioMinute().slice(0, 10);
   const [date, setDate] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
@@ -41,10 +48,10 @@ export default function BookingForm({ facility }: { facility: Facility }) {
     event.preventDefault();
     if (loading) return;
     setError("");
-    const start = new Date(`${date}T${startTime}`);
+    const start = `${date}T${startTime}`;
     if (
-      !Number.isFinite(start.getTime()) ||
-      start <= new Date() ||
+      !date || !startTime ||
+      start <= studioMinute() ||
       !validDuration
     ) {
       setError(
@@ -229,8 +236,8 @@ export default function BookingForm({ facility }: { facility: Facility }) {
               step={1}
             />
             <p className="text-xs text-slate-500">
-              Maximum {facility.capacity} guests. Times are in your local time
-              zone.
+              Maximum {facility.capacity} guests. Times are in the studio time zone
+              ({bookingTimeZone}).
             </p>
           </div>
         </fieldset>

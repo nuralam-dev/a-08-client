@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Suspense, useState, type FormEvent } from "react";
+import { Suspense, useState, useSyncExternalStore, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -22,6 +22,8 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+
+const subscribeToHydration = () => () => {};
 
 interface AuthFormProps {
   mode: "signin" | "signup";
@@ -53,6 +55,7 @@ export default function AuthForm({ mode, googleEnabled = false }: AuthFormProps)
 }
 
 function AuthFormContent({ mode, googleEnabled }: AuthFormProps) {
+  const hydrated = useSyncExternalStore(subscribeToHydration, () => true, () => false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const requestedPath = searchParams.get("next") || "/";
@@ -193,7 +196,7 @@ function AuthFormContent({ mode, googleEnabled }: AuthFormProps) {
             </div>
 
             {/* Authentication Form */}
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form method="post" onSubmit={handleSubmit} className="space-y-5">
 
               {/* Name */}
               {isSignUp && (
@@ -278,7 +281,7 @@ function AuthFormContent({ mode, googleEnabled }: AuthFormProps) {
               {/* Submit Button */}
               <Button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !hydrated}
                 className="h-11 w-full bg-green-600 font-semibold text-white hover:bg-green-700"
               >
                 {loading
@@ -303,7 +306,7 @@ function AuthFormContent({ mode, googleEnabled }: AuthFormProps) {
             <Button
               type="button"
               variant="outline"
-              disabled={loading}
+              disabled={loading || !hydrated}
               onClick={handleGoogleSignIn}
               className="h-11 w-full gap-3"
             >

@@ -1,0 +1,21 @@
+import assert from 'node:assert/strict';
+import {randomUUID} from 'node:crypto';
+import {MongoClient} from 'mongodb';
+const base=process.env.TEST_FRONTEND_URL || 'http://localhost:3027';
+const client=new MongoClient(process.env.MONGODB_URI);await client.connect();
+const accounts=[],facilityIds=[];let checks=0;
+async function call(path,user,method='GET',body,origin=base){const r=await fetch(base+path,{method,headers:{...(user?{cookie:user.cookie}:{}),...(origin?{origin}:{}),...(body?{'content-type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{})});return {status:r.status,headers:r.headers,data:method==='HEAD'?null:await r.json()}}
+function pass(name){checks++;console.log('PASS '+name)}
+try{
+for(let i=0;i<2;i++){const email=`audit-proxy-${randomUUID()}@example.com`;accounts.push({email});const r=await call('/api/auth/sign-up/email',null,'POST',{email,name:'Proxy Audit',password:'AuditAa!'+randomUUID()});assert.equal(r.status,200);Object.assign(accounts[i],{id:r.data.user.id,cookie:r.headers.getSetCookie().map(c=>c.split(';')[0]).join('; ')});}
+const [a,b]=accounts;const studio={name:'Disposable proxy audit',category:'Photo Studio',image:'/images/studio-1.jpg',location:'Dhaka',pricePerHour:10,capacity:5,securityDeposit:0,description:'Disposable test only'};
+for(const user of accounts){const created=await call('/api/backend/facilities',user,'POST',studio);assert.equal(created.status,201);facilityIds.push(created.data.insertedId);assert.equal((await call('/api/backend/facilities/mine',user)).data.length,1);}pass('Both accounts create and see only their own facility through proxy');
+const id=facilityIds[0];assert.equal((await call('/api/backend/facilities/'+id,a,'PUT',studio)).status,200);assert.equal((await call('/api/backend/facilities/'+id,b,'PUT',studio)).status,403);pass('Proxy PUT supports owner and rejects other user');
+assert.equal((await call('/api/backend/facilities/'+id,a,'PATCH',{name:'Blocked'},'https://evil.example.test')).status,403);assert.equal((await call('/api/backend/facilities/'+id,a,'PATCH',{name:'Blocked'},'')).status,403);pass('Proxy rejects foreign and absent mutation origins');
+assert.equal((await call('/api/backend/facilities/mine',null)).status,401);assert.equal((await call('/api/backend/facilities',null,'HEAD')).status,200);assert.equal((await call('/api/auth/token',a)).status,404);pass('Proxy missing session, HEAD and disabled browser token endpoint');
+for(const body of [{facilityId:id,date:'2000-01-01',startTime:'09:00',endTime:'10:00',guests:1},{}])assert.equal((await call('/api/backend/facilities/booking',a,'POST',body)).status,400);pass('Past and missing booking fields rejected through actual proxy');
+const made=await call('/api/backend/facilities/booking',a,'POST',{facilityId:id,date:'2035-05-12',startTime:'09:00',endTime:'10:00',guests:1});assert.equal(made.status,201);const bid=made.data.insertedId;
+assert.equal((await call('/api/backend/facilities/booking/'+bid,a)).status,200);assert.equal((await call('/api/backend/facilities/booking/'+bid,b)).status,403);assert.equal((await call('/api/backend/facilities/booking/'+bid,b,'DELETE')).status,403);assert.deepEqual((await call('/api/backend/facilities/booking',b)).data,[]);pass('Proxy booking detail, cancellation ownership, and private list isolation');
+assert.equal((await call('/api/backend/facilities/booking/'+bid,a,'DELETE')).status,200);
+for(let i=0;i<2;i++)assert.equal((await call('/api/backend/facilities/'+facilityIds[i],accounts[i],'DELETE')).status,200);pass('Both accounts can delete their own disposable facilities');
+}finally{const db=client.db('A08'),auth=client.db();const users=await auth.collection('user').find({email:{$in:accounts.map(a=>a.email)}}).toArray();const ids=users.flatMap(u=>[u._id,String(u._id)]);await db.collection('facilitiesBooking').deleteMany({userId:{$in:ids}});await db.collection('facilities').deleteMany({ownerId:{$in:ids}});await db.collection('bookingLocks').deleteMany({_id:{$in:facilityIds}});for(const c of ['session','account'])await auth.collection(c).deleteMany({userId:{$in:ids}});await auth.collection('user').deleteMany({email:{$in:accounts.map(a=>a.email)}});await client.close();console.log(`Finished ${checks} proxy groups; disposable records cleaned.`)}
