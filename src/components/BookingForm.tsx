@@ -9,8 +9,9 @@ import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+const API_URL = "/api/backend";
 const money = (amount: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(
     amount,
@@ -18,6 +19,7 @@ const money = (amount: number) =>
 
 export default function BookingForm({ facility }: { facility: Facility }) {
   const router = useRouter();
+  const { data: currentSession, isPending } = authClient.useSession();
   const [date, setDate] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
@@ -59,17 +61,20 @@ export default function BookingForm({ facility }: { facility: Facility }) {
       }
       const response = await fetch(`${API_URL}/facilities/booking`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           facilityId: facility._id,
-          name: String(fields.get("name") ?? "").trim(),
-          email: String(fields.get("email") ?? "").trim(),
           date,
           startTime,
           endTime,
           guests: Number(fields.get("guests")),
         }),
       });
+      if (response.status === 401) {
+        router.replace(`/login?next=${encodeURIComponent(`/facilities/${facility._id}`)}`);
+        return;
+      }
       if (response.status === 404 || response.status === 405) {
         throw new Error(
           "Online booking is not available yet. Please try again later.",
@@ -129,7 +134,7 @@ export default function BookingForm({ facility }: { facility: Facility }) {
         aria-describedby={error ? "booking-error" : undefined}
       >
         <fieldset
-          disabled={loading}
+          disabled={loading || isPending}
           className="min-w-0 space-y-4 disabled:opacity-60"
         >
           <div className="space-y-2">
@@ -142,6 +147,8 @@ export default function BookingForm({ facility }: { facility: Facility }) {
               minLength={2}
               maxLength={120}
               placeholder="Your full name"
+              value={currentSession?.user.name ?? ""}
+              readOnly
             />
           </div>
           <div className="space-y-2">
@@ -153,6 +160,8 @@ export default function BookingForm({ facility }: { facility: Facility }) {
               autoComplete="email"
               required
               placeholder="you@example.com"
+              value={currentSession?.user.email ?? ""}
+              readOnly
             />
           </div>
           <div className="space-y-2">
@@ -251,16 +260,24 @@ export default function BookingForm({ facility }: { facility: Facility }) {
             {error}
           </p>
         )}
-        <Button
+        {!isPending && !currentSession?.user ? (
+          <Button
+            render={<Link href={`/login?next=${encodeURIComponent(`/facilities/${facility._id}`)}`} />}
+            nativeButton={false}
+            className="h-12 w-full rounded-full bg-green-600 font-semibold text-white hover:bg-green-700"
+          >
+            Log in to book
+          </Button>
+        ) : <Button
           type="submit"
-          disabled={loading}
+          disabled={loading || isPending || !currentSession?.user}
           className="h-12 w-full rounded-full bg-green-600 font-semibold text-white hover:bg-green-700"
         >
           {loading && (
             <Loader2 className="size-4 animate-spin" aria-hidden="true" />
           )}
           {loading ? "Submitting..." : "Request booking"}
-        </Button>
+        </Button>}
         <p className="text-center text-xs leading-relaxed text-slate-500">
           No payment is collected here. Availability and final pricing must be
           confirmed by the studio.

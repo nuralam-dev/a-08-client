@@ -6,7 +6,7 @@ import { getSessionCookie } from 'better-auth/cookies';
 // This function can be marked `async` if using `await` inside
 export async function proxy(request: NextRequest) {
     const session = getSessionCookie(request)
-        ? await auth.api.getSession({ headers: request.headers })
+        ? await auth.api.getSession({ headers: request.headers, query: { disableCookieCache: true } })
         : null;
     const user = session?.user;
 
@@ -23,5 +23,5 @@ export async function proxy(request: NextRequest) {
 // export default function proxy(request: NextRequest) { ... }
 
 export const config = {
-    matcher: ['/dashboard/:path*', '/facilities/:id', '/my-facility'],
+    matcher: ['/dashboard/:path*', '/my-facility'],
 }

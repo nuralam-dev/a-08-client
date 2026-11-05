@@ -1,6 +1,6 @@
 
 import Link from "next/link";
-import Image from "next/image";
+import FacilityImage from "./FacilityImage";
 
 import {
   FaLocationDot,
@@ -29,10 +29,8 @@ export default function FacilityCard({
 
       {/* Facility Image */}
       <div className="relative h-56 w-full">
-        <Image
+        <FacilityImage
           src={facility.image}
-          // The external image host times out through Next's image optimizer.
-          unoptimized
           alt={facility.name}
           fill
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"

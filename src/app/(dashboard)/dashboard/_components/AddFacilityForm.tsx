@@ -102,19 +102,22 @@ export default function AddFacilityForm({ facility: initialFacility, onSaved, on
 
       // POST data to Express.js backend
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/facilities${initialFacility ? `/${encodeURIComponent(initialFacility._id)}` : ""}`,
+        `/api/backend/facilities${initialFacility ? `/${encodeURIComponent(initialFacility._id)}` : ""}`,
         {
           method: initialFacility ? "PATCH" : "POST",
+          credentials: "include",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(initialFacility ? newFacility : {
-            ...newFacility,
-            email: session.data.user.email.trim(),
-          }),
+          body: JSON.stringify(newFacility),
         }
       );
 
+      if (response.status === 401) {
+        router.replace(`/login?next=${encodeURIComponent(initialFacility ? returnTo : "/dashboard/add-facility")}`);
+        return;
+      }
+      if (response.status === 403) throw new Error("You can only update facilities you added.");
       if (!response.ok) {
         throw new Error(initialFacility ? "Failed to update facility" : "Failed to add facility");
       }
@@ -126,7 +129,7 @@ export default function AddFacilityForm({ facility: initialFacility, onSaved, on
           throw new Error("Studio was not found or could not be updated");
         }
         toast.success("Studio updated successfully!");
-        onSaved?.({ ...newFacility, _id: initialFacility._id });
+        onSaved?.({ ...initialFacility, ...newFacility });
         router.refresh();
       } else if (data.acknowledged || data.insertedId) {
         toast.success("Studio added successfully!");
@@ -231,8 +234,10 @@ export default function AddFacilityForm({ facility: initialFacility, onSaved, on
                 type="url"
                 required
                 placeholder="https://example.com/studio.jpg"
+                aria-describedby="image-hint"
                 className={inputClass}
               />
+              <p id="image-hint" className="mt-2 text-sm text-gray-500">Use a direct image URL, not a website or image-sharing page.</p>
             </div>
 
             {/* Location */}

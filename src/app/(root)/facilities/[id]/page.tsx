@@ -1,12 +1,12 @@
-import Image from "next/image";
+import FacilityImage from "@/components/FacilityImage";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, MapPin, Users } from "lucide-react";
 import BookingForm from "@/components/BookingForm";
 import type { Facility } from "@/types/facility";
-import { requireSession } from "@/lib/require-session";
+import { connection } from "next/server";
+import { getBackendURL } from "@/lib/backend";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 const categoryGuides: Record<string, string> = {
   "Photo Studio": "Planning a portrait session, product shoot, or editorial project? Share your shot list with the studio and confirm the available lighting, backdrops, and setup space before booking.",
@@ -22,11 +22,11 @@ export default async function FacilityDetailsPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  await requireSession(`/facilities/${encodeURIComponent(id)}`);
+  await connection();
 
   // The individual facility endpoint currently returns placeholder text.
   // Resolve the selected studio from the working collection endpoint.
-  const response = await fetch(`${API_URL}/facilities`, { cache: "no-store" });
+  const response = await fetch(`${getBackendURL()}/facilities`, { cache: "no-store" });
   if (!response.ok) throw new Error("Unable to load studio details");
 
   const facilities: Facility[] = await response.json();
@@ -45,7 +45,7 @@ export default async function FacilityDetailsPage({
           <p className="mt-4 flex items-center gap-2 text-slate-500"><MapPin className="size-4 shrink-0" aria-hidden="true" />{facility.location}</p>
         </div>
         <div className="relative aspect-[4/3] overflow-hidden rounded-3xl bg-slate-200 sm:aspect-[2/1]">
-          <Image src={facility.image} alt={facility.name} fill unoptimized loading="eager" sizes="(max-width: 1152px) 100vw, 1152px" className="object-cover" />
+          <FacilityImage src={facility.image} alt={facility.name} fill loading="eager" sizes="(max-width: 1152px) 100vw, 1152px" className="object-cover" />
         </div>
         <div className="mt-8 grid items-start gap-8 lg:grid-cols-[1fr_340px]">
           <section className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8" aria-labelledby="about-studio">

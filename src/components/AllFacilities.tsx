@@ -7,8 +7,7 @@ import FacilityCard from "@/components/FacilityCard";
 import { Input } from "@/components/ui/input";
 import type { Facility } from "@/types/facility";
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+const API_URL = "/api/backend";
 
 export default function AllFacilities() {
   const [facilities, setFacilities] = useState<Facility[]>([]);

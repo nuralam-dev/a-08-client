@@ -6,19 +6,40 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import type { Facility } from "@/types/facility";
 import AddFacilityForm from "./AddFacilityForm";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+const API_URL = "/api/backend";
 
-export default function ManageFacilities({ scope = "mine" }: { scope?: "mine" | "all" }) {
-  const returnTo = scope === "all" ? "/dashboard/manage-facilities" : "/dashboard/my-facility";
+interface ManageFacilitiesProps {
+  title?: string;
+  returnTo?: string;
+}
+
+export default function ManageFacilities({ title = "Manage Facilities", returnTo = "/dashboard/manage-facilities" }: ManageFacilitiesProps) {
+  const router = useRouter();
+  const { data: session, isPending } = authClient.useSession();
+  useEffect(() => {
+    if (!isPending && !session) router.replace(`/login?next=${encodeURIComponent(returnTo)}`);
+  }, [isPending, session, router, returnTo]);
+
+  if (isPending || !session) return <p role="status" className="p-6">Loading facilities...</p>;
+  // Reset all private data and open forms when the signed-in account changes.
+  return <UserFacilities key={session.user.id} title={title} returnTo={returnTo} />;
+}
+
+function UserFacilities({ title, returnTo }: Required<ManageFacilitiesProps>) {
   const router = useRouter();
   const [facilities, setFacilities] = useState<Facility[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
   const [editing, setEditing] = useState<Facility | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<Facility | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
 
   useEffect(() => {
@@ -27,23 +48,18 @@ export default function ManageFacilities({ scope = "mine" }: { scope?: "mine" | 
       setLoading(true);
       setError("");
       try {
-        const session = await authClient.getSession();
-        if (controller.signal.aborted) return;
-        if (session.error) throw new Error("Unable to verify your sign-in");
-        if (!session.data) {
+        const response = await fetch(`${API_URL}/facilities/mine`, {
+          signal: controller.signal,
+          cache: "no-store",
+          credentials: "include",
+        });
+        if (response.status === 401) {
           router.replace(`/login?next=${encodeURIComponent(returnTo)}`);
           return;
         }
-        let endpoint = `${API_URL}/facilities`;
-        if (scope === "mine") {
-          const email = session.data.user.email?.trim();
-          if (!email) throw new Error("Your account needs an email to load your facilities.");
-          endpoint += `/my?${new URLSearchParams({ email })}`;
-        }
-        const response = await fetch(endpoint, { signal: controller.signal, cache: "no-store" });
         if (!response.ok) throw new Error("Unable to load facilities. Please try again.");
         const data: Facility[] = await response.json();
-        setFacilities(data);
+        if (!controller.signal.aborted) setFacilities(data);
       } catch (error) {
         if (!controller.signal.aborted) setError(error instanceof Error ? error.message : "Unable to load facilities.");
       } finally {
@@ -52,23 +68,26 @@ export default function ManageFacilities({ scope = "mine" }: { scope?: "mine" | 
     }
     void load();
     return () => controller.abort();
-  }, [attempt, router, scope, returnTo]);
+  }, [attempt, router, returnTo]);
 
   async function deleteFacility(facility: Facility) {
-    if (deleting || !window.confirm(`Delete "${facility.name}"? This cannot be undone.`)) return;
+    if (deleting) return;
     setDeleting(facility._id);
     try {
-      const session = await authClient.getSession();
-      if (session.error) throw new Error("Unable to verify your sign-in");
-      if (!session.data) {
+      const response = await fetch(`${API_URL}/facilities/${encodeURIComponent(facility._id)}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (response.status === 401) {
         router.replace(`/login?next=${encodeURIComponent(returnTo)}`);
         return;
       }
-      const response = await fetch(`${API_URL}/facilities/${encodeURIComponent(facility._id)}`, { method: "DELETE" });
+      if (response.status === 403) throw new Error("You can only delete facilities you added.");
       if (!response.ok) throw new Error("Unable to delete studio. Please try again.");
       const result = await response.json();
       if (result.acknowledged !== true || result.deletedCount !== 1) throw new Error("Studio was not found or could not be deleted.");
       setFacilities((current) => current.filter((item) => item._id !== facility._id));
+      setConfirmDelete(null);
       toast.success("Studio deleted successfully!");
       router.refresh();
     } catch (error) {
@@ -87,16 +106,20 @@ export default function ManageFacilities({ scope = "mine" }: { scope?: "mine" | 
     <main className="min-h-screen bg-slate-50 px-5 py-10 md:px-10">
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">{scope === "all" ? "Manage Facilities" : "My Facilities"}</h1>
-          <p className="mt-2 text-slate-500">{scope === "all" ? "View, update, and delete all studio listings." : "View, update, and delete the studios you have listed."}</p>
+          <h1 className="text-3xl font-bold text-slate-900">{title}</h1>
+          <p className="mt-2 text-slate-500">View, update, and delete the studios you have listed.</p>
         </div>
-        <Link href="/dashboard/add-facility" className="rounded-xl bg-green-600 px-5 py-3 font-semibold text-white">Add Studio</Link>
+        <Link href="/dashboard/add-facility" className="rounded-xl bg-green-600 px-5 py-3 font-semibold text-white">Add Facility</Link>
       </div>
       {loading ? <p role="status">Loading facilities...</p> : error ? (
         <div role="alert" className="space-y-4 rounded-2xl border bg-white p-6">
           <p>{error}</p><Button onClick={() => setAttempt((value) => value + 1)}>Try Again</Button>
         </div>
-      ) : facilities.length === 0 ? <p className="rounded-2xl border bg-white p-8">No facilities yet. Add a studio to get started.</p> : (
+      ) : facilities.length === 0 ? <div className="rounded-2xl border bg-white p-8 text-center">
+        <h2 className="text-xl font-semibold text-slate-900">No facilities added yet.</h2>
+        <p className="mt-2 text-slate-500">You haven&apos;t added any facilities. Start by adding your first studio.</p>
+        <Button className="mt-5" render={<Link href="/dashboard/add-facility" />} nativeButton={false}>Add Facility</Button>
+      </div> : (
         <div className="grid gap-5 xl:grid-cols-2">
           {facilities.map((facility) => (
             <article key={facility._id} className="rounded-2xl border bg-white p-6">
@@ -105,7 +128,7 @@ export default function ManageFacilities({ scope = "mine" }: { scope?: "mine" | 
               <p className="mt-2 font-semibold">${facility.pricePerHour} / hour · {facility.capacity} guests</p>
               <div className="mt-5 flex gap-3">
                 <Button variant="outline" disabled={deleting !== null} onClick={() => setEditing(facility)} aria-label={`Edit ${facility.name}`}>Edit</Button>
-                <Button variant="destructive" disabled={deleting !== null} onClick={() => void deleteFacility(facility)} aria-label={`Delete ${facility.name}`}>
+                <Button variant="destructive" disabled={deleting !== null} onClick={() => setConfirmDelete(facility)} aria-label={`Delete ${facility.name}`}>
                   {deleting === facility._id ? "Deleting..." : "Delete"}
                 </Button>
               </div>
@@ -113,6 +136,20 @@ export default function ManageFacilities({ scope = "mine" }: { scope?: "mine" | 
           ))}
         </div>
       )}
+      <AlertDialog open={confirmDelete !== null} onOpenChange={(open) => { if (!open && !deleting) setConfirmDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete facility?</AlertDialogTitle>
+            <AlertDialogDescription>Delete &quot;{confirmDelete?.name}&quot;? This cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting !== null}>Cancel</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" disabled={deleting !== null} onClick={() => { if (confirmDelete) void deleteFacility(confirmDelete); }}>
+              {deleting ? "Deleting..." : "Delete Facility"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </main>
   );
 }

@@ -1,5 +1,6 @@
 export interface Facility {
   _id: string;
+  ownerId?: string;
   name: string;
   category: string;
   image: string;

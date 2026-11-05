@@ -1,5 +1,6 @@
 
 import Link from "next/link";
+import { getBackendURL } from "@/lib/backend";
 import { connection } from "next/server";
 import { FaArrowRight } from "react-icons/fa6";
 
@@ -12,7 +13,7 @@ async function getFeaturedFacilities(): Promise<Facility[]> {
 
   try {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/facilities`,
+      `${getBackendURL()}/facilities`,
       {
         cache: "no-store",
       }

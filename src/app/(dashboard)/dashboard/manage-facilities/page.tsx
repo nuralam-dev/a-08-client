@@ -4,7 +4,7 @@ import ManageFacilities from "../_components/ManageFacilities";
 
 async function ProtectedFacilities() {
   await requireSession("/dashboard/manage-facilities");
-  return <ManageFacilities scope="all" />;
+  return <ManageFacilities />;
 }
 
 export default function ManageFacilitiesPage() {

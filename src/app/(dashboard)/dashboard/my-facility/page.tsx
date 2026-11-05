@@ -4,7 +4,7 @@ import ManageFacilities from "../_components/ManageFacilities";
 
 async function ProtectedFacilities() {
   await requireSession("/dashboard/my-facility");
-  return <ManageFacilities />;
+  return <ManageFacilities title="My Facilities" returnTo="/dashboard/my-facility" />;
 }
 
 export default function ManageFacilitiesPage() {
