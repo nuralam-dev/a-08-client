@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { auth, authBaseURL, jwtEnabled } from "@/lib/auth";
+import { getAuth } from "@/lib/auth";
 import { getBackendURL } from "@/lib/backend";
 
 async function handleRequest(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
@@ -17,6 +17,7 @@ async function handleRequest(request: NextRequest, context: { params: Promise<{ 
     (bookingId && method === "DELETE");
   if (!allowed) return Response.json({ message: "Route not found." }, { status: 404 });
 
+  const { auth, authBaseURL, jwtEnabled } = getAuth();
   const privateHeaders = { "Cache-Control": "private, no-store" };
   // Same-origin cookies authenticate browser requests. Reject cross-site writes before forwarding.
   if (!isRead && request.headers.get("origin") !== authBaseURL) {

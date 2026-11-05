@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { auth } from './lib/auth';
+import { getAuth } from './lib/auth';
 import { getSessionCookie } from 'better-auth/cookies';
 
 // This function can be marked `async` if using `await` inside
 export async function proxy(request: NextRequest) {
     const session = getSessionCookie(request)
-        ? await auth.api.getSession({ headers: request.headers, query: { disableCookieCache: true } })
+        ? await getAuth().auth.api.getSession({ headers: request.headers, query: { disableCookieCache: true } })
         : null;
     const user = session?.user;
 

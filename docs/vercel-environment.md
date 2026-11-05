@@ -19,7 +19,6 @@ Set these in the **frontend Vercel project's Production environment**, then rebu
 
 ```dotenv
 NEXT_PUBLIC_API_URL=https://studiospace-server-ndqc56sxs-nur-alam1.vercel.app
-NEXT_PUBLIC_AUTH_URL=https://YOUR-ACTUAL-FRONTEND-DOMAIN.vercel.app
 BETTER_AUTH_URL=https://YOUR-ACTUAL-FRONTEND-DOMAIN.vercel.app
 BETTER_AUTH_SECRET=your-existing-private-random-secret-at-least-32-characters
 MONGODB_URI=your-private-production-auth-database-connection
@@ -31,7 +30,7 @@ GOOGLE_CLIENT_SECRET=your-private-google-client-secret
 
 `BACKEND_URL` is an optional **server-only override**. If you already use it, set it to `https://studiospace-server-ndqc56sxs-nur-alam1.vercel.app` too, or remove it from Vercel so `NEXT_PUBLIC_API_URL` takes effect. Never leave a development override in Production. Google variables are required for Google login; both may remain unset only when Google login is not being used.
 
-Only the two `NEXT_PUBLIC_*` values above are public. MongoDB credentials, the BetterAuth secret, Google secrets, and signing keys must never use that prefix. Public values are normally baked into the client at build time, so redeploy/rebuild after changing them. [Next.js environment-variable documentation](https://nextjs.org/docs/app/guides/environment-variables)
+`NEXT_PUBLIC_AUTH_URL` is optional: the existing browser client uses the current origin when it is absent. Prefer leaving it unset in Vercel. If you set it, use exactly the same origin as `BETTER_AUTH_URL`; a stale localhost value is rejected. `NEXT_PUBLIC_API_URL` is public. MongoDB credentials, the BetterAuth secret, Google secrets, and signing keys must never use that prefix. Public values are normally baked into the client at build time, so redeploy/rebuild after changing them. [Next.js environment-variable documentation](https://nextjs.org/docs/app/guides/environment-variables)
 
 ## Exact backend Vercel variables
 
@@ -95,21 +94,28 @@ The existing Express source verifies JWT signatures through JWKS and checks issu
 2. In Vercel, import the existing frontend repository. This repository's root is `a-08-client`, so use Root Directory `.` when importing that repository by itself. Use `a-08-client` only if importing its parent directory as a monorepo.
 3. Select the **Next.js** framework, `npm ci` as the install command, and `npm run build` as the build command. Keep the framework's default output directory. Use Node.js 22 or 24. No frontend `vercel.json` is required or was created.
 4. Obtain the actual frontend HTTPS origin from the Vercel project's Domains settings. Enter the frontend environment variables listed above before the production build. Do not enter the frontend placeholder as a real auth origin. If an initial build ran before these variables were available, configure them and redeploy.
-5. Set `NEXT_PUBLIC_AUTH_URL` and `BETTER_AUTH_URL` to that same real frontend origin. Preserve the existing private BetterAuth secret and auth MongoDB database. Rebuild after changing public variables.
+5. Set `BETTER_AUTH_URL` to that real frontend origin. Leave `NEXT_PUBLIC_AUTH_URL` unset, or set it to exactly the same origin. Preserve the existing private BetterAuth secret and auth MongoDB database. Rebuild after changing public variables.
 6. In the backend Vercel project, update **both `CLIENT_URL` and `AUTH_BASE_URL`** to the real frontend HTTPS origin and redeploy the backend. Keep `API_AUTH_MODE=jwt` and `JWT_AUDIENCE=studiospace-api` aligned on both projects.
 7. Register the real frontend's `/api/auth/callback/google` URL in Google Cloud and configure the existing Google provider credentials on the frontend server.
 8. Redeploy the frontend after setting its final variables. Verify public facility pages, email/password and Google login, private dashboard lists, ownership checks, and facility/booking operations with your own test accounts. No deployment was performed as part of this preparation.
 
-## Current frontend verification
+## Production build failure and fix
 
-- Full `npm run lint`: passed. The previous two errors were fixed by subscribing to viewport and carousel state with React's `useSyncExternalStore`; no ESLint rules were disabled.
-- `npx tsc --noEmit`: passed.
-- `npm run build`: passed with the supplied real backend URL, JWT enabled, and an explicitly temporary frontend test origin. The temporary origin was used only in the build process, not saved as a deployment URL. A normal production build still needs the real frontend auth origin configured.
-- Browser verification of the modified components: carousel navigation, initial/end arrow disabled states, responsive mobile/desktop updates, and absence of browser runtime errors passed.
-- Existing Suspense boundaries, request-time public facility fetching, async dynamic route parameters, image handling, auth routes, same-origin API forwarding, and JWT issuance were inspected and preserved.
-- Source scan: no direct localhost API calls in components. Remaining local URLs are intentional development fallbacks and examples, rejected as production origins by the existing URL validation.
-- Local `.env.local` retains localhost API/auth values. Production uses the remote API URL in the Vercel configuration above. Existing `.env` secrets were not modified.
-- Production API checks: both public requests returned HTTP 302 to Vercel SSO; remote facility loading and protected operations are therefore unverified, not reported as successful.
-- No production database mutations, automatic deployment, new dependencies, Git commits, or pushes were performed.
+The local `.env` sets `BETTER_AUTH_URL=http://localhost:3000`. The local `.env.local` sets `NEXT_PUBLIC_AUTH_URL=http://localhost:3000`, `BACKEND_URL=http://localhost:4000`, and `NEXT_PUBLIC_API_URL=http://localhost:4000`. These files were not overwritten. Next.js loads `.env.local` before `.env`, including during `next build`, and process environment values take priority over both.
 
-See [React's external-store API](https://react.dev/reference/react/useSyncExternalStore) for the subscription pattern used in the two lint fixes.
+The first failure was specifically `BETTER_AUTH_URL` from `.env`, because it takes priority over `NEXT_PUBLIC_AUTH_URL` in the auth configuration. Correcting only that variable leaves the public auth URL mismatch and the localhost backend override to fix.
+
+Previously importing `auth.ts` validated configuration, constructed the MongoDB client and initialized BetterAuth while Next.js collected route data. The server-only `getAuth()` now validates and initializes one cached instance on first use by a request. Auth handlers, the backend proxy, dashboard session helper and Next.js proxy all use this accessor. Importing a route no longer requires a live auth configuration. Production requests still reject HTTP/local origins, mismatched frontend origins, missing secrets/database configuration and missing JWT audience. No build-phase security bypass was added.
+
+The actual production frontend domain is not recorded in this checkout. Obtain it from Vercel **Settings → Domains**; documentation placeholders are not deployable configuration. The production frontend `BETTER_AUTH_URL`, backend `CLIENT_URL` and backend `AUTH_BASE_URL` must all be that same origin. BetterAuth uses it for its base URL and JWT issuer; Express derives the expected issuer and `/api/auth/jwks` URL from `AUTH_BASE_URL`. Keep the existing shared JWT audience on both apps. MongoDB and BetterAuth secrets stay server-only.
+
+For a local production build, supply process environment overrides for **all four** localhost URL variables (without editing `.env` or `.env.local`): `BETTER_AUTH_URL` and `NEXT_PUBLIC_AUTH_URL` must be the real frontend HTTPS origin; `BACKEND_URL` and `NEXT_PUBLIC_API_URL` must be `https://studiospace-server-ndqc56sxs-nur-alam1.vercel.app`. Use the existing private production MongoDB URI and BetterAuth secret, and matching `API_AUTH_MODE`/`JWT_AUDIENCE` when verifying JWT configuration. Do not put secrets in a public environment variable or commit them.
+
+A successful build alone does not verify authentication or API availability. After manually configuring and deploying both projects, verify login, HTTP-only Secure cookies, private facility/booking requests and the public JWKS endpoint. No environment files, deployment settings, database records, commits or pushes are changed by this fix.
+
+## Verification for this fix
+
+- `npm run build`: passed, exit code 0; both API routes collected successfully and all 15 static pages generated. The sandboxed attempt stalled at compilation and was interrupted; the subsequent build outside the sandbox passed.
+- The successful build used the unchanged local environment files. It verifies deferred initialization, **not a valid production deployment configuration**. A build using the actual frontend domain is pending because that domain has not been supplied or found in this checkout. No substitute frontend domain was used.
+- TypeScript, ESLint and whitespace checks passed. Focused isolated checks verified that module import does not initialize BetterAuth/MongoDB, production still rejects HTTP/localhost origins, development accepts localhost, and the auth instance is cached.
+- Live production authentication and JWT verification have not been tested.
