@@ -4,5 +4,4 @@ export const navLinks = [
   { name: "My Bookings", href: "/dashboard/my-booking" },
   { name: "Add Facility", href: "/dashboard/add-facility" },
   { name: "Manage Facilities", href: "/dashboard/manage-facilities" },
-  { name: "My Facilities", href: "/dashboard/my-facility" },
 ];

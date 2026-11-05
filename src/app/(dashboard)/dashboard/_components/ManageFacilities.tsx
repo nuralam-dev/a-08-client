@@ -10,8 +10,10 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { readFacilitiesResponse } from "@/lib/facilities";
+import { apiError } from "@/lib/api-error";
+import FacilityImage from "@/components/FacilityImage";
 import type { Facility } from "@/types/facility";
-import AddFacilityForm from "./AddFacilityForm";
 
 const API_URL = "/api/backend";
 
@@ -38,7 +40,6 @@ function UserFacilities({ title, returnTo }: Required<ManageFacilitiesProps>) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
-  const [editing, setEditing] = useState<Facility | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Facility | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
 
@@ -57,8 +58,7 @@ function UserFacilities({ title, returnTo }: Required<ManageFacilitiesProps>) {
           router.replace(`/login?next=${encodeURIComponent(returnTo)}`);
           return;
         }
-        if (!response.ok) throw new Error("Unable to load facilities. Please try again.");
-        const data: Facility[] = await response.json();
+        const data = await readFacilitiesResponse(response);
         if (!controller.signal.aborted) setFacilities(data);
       } catch (error) {
         if (!controller.signal.aborted) setError(error instanceof Error ? error.message : "Unable to load facilities.");
@@ -83,7 +83,7 @@ function UserFacilities({ title, returnTo }: Required<ManageFacilitiesProps>) {
         return;
       }
       if (response.status === 403) throw new Error("You can only delete facilities you added.");
-      if (!response.ok) throw new Error("Unable to delete studio. Please try again.");
+      if (!response.ok) throw await apiError(response, "Unable to delete studio");
       const result = await response.json();
       if (result.acknowledged !== true || result.deletedCount !== 1) throw new Error("Studio was not found or could not be deleted.");
       setFacilities((current) => current.filter((item) => item._id !== facility._id));
@@ -96,11 +96,6 @@ function UserFacilities({ title, returnTo }: Required<ManageFacilitiesProps>) {
       setDeleting(null);
     }
   }
-
-  if (editing) return <AddFacilityForm key={editing._id} facility={editing} returnTo={returnTo} onCancel={() => setEditing(null)} onSaved={(updated) => {
-    setFacilities((current) => current.map((item) => item._id === updated._id ? updated : item));
-    setEditing(null);
-  }} />;
 
   return (
     <main className="min-h-screen bg-slate-50 px-5 py-10 md:px-10">
@@ -118,16 +113,17 @@ function UserFacilities({ title, returnTo }: Required<ManageFacilitiesProps>) {
       ) : facilities.length === 0 ? <div className="rounded-2xl border bg-white p-8 text-center">
         <h2 className="text-xl font-semibold text-slate-900">No facilities added yet.</h2>
         <p className="mt-2 text-slate-500">You haven&apos;t added any facilities. Start by adding your first studio.</p>
-        <Button className="mt-5" render={<Link href="/dashboard/add-facility" />} nativeButton={false}>Add Facility</Button>
+        <Button className="mt-5" render={<Link href="/dashboard/add-facility" />} nativeButton={false} role="link">Add Facility</Button>
       </div> : (
         <div className="grid gap-5 xl:grid-cols-2">
           {facilities.map((facility) => (
-            <article key={facility._id} className="rounded-2xl border bg-white p-6">
+            <article key={facility._id} className="overflow-hidden rounded-2xl border bg-white p-6 shadow-sm">
+              <div className="relative mb-5 aspect-video overflow-hidden rounded-xl bg-slate-100"><FacilityImage src={facility.image} alt={facility.name} fill sizes="(min-width: 1280px) 40vw, 100vw" className="object-cover" /></div>
               <h2 className="text-xl font-bold text-slate-900">{facility.name}</h2>
               <p className="mt-2 text-slate-500">{facility.category} · {facility.location}</p>
               <p className="mt-2 font-semibold">${facility.pricePerHour} / hour · {facility.capacity} guests</p>
               <div className="mt-5 flex gap-3">
-                <Button variant="outline" disabled={deleting !== null} onClick={() => setEditing(facility)} aria-label={`Edit ${facility.name}`}>Edit</Button>
+                <Button variant="outline" render={<Link href={`/dashboard/edit-facility/${facility._id}`} />} nativeButton={false} role="link" aria-label={`Edit ${facility.name}`}>Edit</Button>
                 <Button variant="destructive" disabled={deleting !== null} onClick={() => setConfirmDelete(facility)} aria-label={`Delete ${facility.name}`}>
                   {deleting === facility._id ? "Deleting..." : "Delete"}
                 </Button>

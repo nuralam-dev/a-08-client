@@ -1,6 +1,7 @@
 
 "use client";
 
+import AccountMenu from "@/components/auth/AccountMenu";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -32,11 +33,6 @@ const menuItems = [
   {
     name: "Manage Facilities",
     href: "/dashboard/manage-facilities",
-    icon: FaGear,
-  },
-  {
-    name: "My Facilities",
-    href: "/dashboard/my-facility",
     icon: FaGear,
   },
 ];
@@ -143,6 +139,7 @@ export default function Sidebar({
             </div>
           </div>
         </div>
+        <div className="border-t p-4"><AccountMenu loginHref="/login" /></div>
       </aside>
     </>
   );

@@ -14,7 +14,7 @@ async function getFeaturedFacilities(): Promise<{ facilities: Facility[]; error:
 
   try {
     const response = await fetch(
-      `${getBackendURL()}/facilities`,
+      `${getBackendURL()}/facilities/featured`,
       {
         cache: "no-store",
         redirect: "error",

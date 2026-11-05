@@ -1,23 +1,22 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
   reactCompiler: true,
-   images: {
+  images: {
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: 'i.ibb.co.com',
+        protocol: "https",
+        hostname: "i.ibb.co.com",
       },
       {
-        protocol: 'https',
-        hostname: 'static.wixstatic.com',
+        protocol: "https",
+        hostname: "static.wixstatic.com",
       },
     ],
   },
-  
+  // Preserve the installed Tailwind v4 Turbopack loader.
   turbopack: {
     rules: {
       "*.css": {

@@ -52,7 +52,7 @@ export default function Testimonials() {
           </h2>
 
           <p className="mt-4 text-base text-slate-500 md:text-lg">
-            Hear from creators who have explored StudioSpace
+            Illustrative feedback — demo content, not verified customer reviews
           </p>
         </div>
 

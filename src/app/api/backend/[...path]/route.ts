@@ -11,7 +11,8 @@ async function handleRequest(request: NextRequest, context: { params: Promise<{ 
   const mine = path.length === 2 && path[0] === "facilities" && ["mine", "my"].includes(path[1]);
   const bookings = path.length === 2 && path[0] === "facilities" && path[1] === "booking";
   const bookingId = path.length === 3 && path[0] === "facilities" && path[1] === "booking" && /^[a-f0-9]{24}$/i.test(path[2]);
-  const publicRead = isRead && (facilityRoot || facilityId);
+  const featured = path.length === 2 && path[0] === "facilities" && path[1] === "featured";
+  const publicRead = isRead && (facilityRoot || facilityId || featured);
   const allowed = publicRead || (facilityRoot && method === "POST") || (mine && isRead) ||
     (bookings && (isRead || method === "POST")) || (facilityId && ["PATCH", "DELETE"].includes(method)) ||
     (bookingId && method === "DELETE");
@@ -19,12 +20,15 @@ async function handleRequest(request: NextRequest, context: { params: Promise<{ 
 
   const privateHeaders = { "Cache-Control": "private, no-store" };
 
+  let stage = "configuration";
   try {
+    const backendURL = getBackendURL();
     const upstreamHeaders = new Headers();
     const contentType = request.headers.get("content-type");
     if (contentType) upstreamHeaders.set("content-type", contentType);
 
     if (!publicRead) {
+      stage = "authentication";
       const { auth, trustedOrigins, jwtEnabled } = getAuth();
       // Keep origin and session checks on every protected operation.
       if (!isRead && !trustedOrigins.includes(request.headers.get("origin") || "")) {
@@ -39,7 +43,8 @@ async function handleRequest(request: NextRequest, context: { params: Promise<{ 
       }
     }
 
-    const url = new URL(`/${path.map(encodeURIComponent).join("/")}`, getBackendURL());
+    stage = "backend";
+    const url = new URL(`/${path.map(encodeURIComponent).join("/")}`, backendURL);
     url.search = request.nextUrl.search;
     const response = await fetch(url, {
       method,
@@ -70,13 +75,19 @@ async function handleRequest(request: NextRequest, context: { params: Promise<{ 
         : undefined;
       console.error("Backend proxy request failed", {
         backend: process.env.BACKEND_URL?.trim() || process.env.NEXT_PUBLIC_API_URL?.trim() || "(development default)",
+        stage,
         method,
         path: path.join("/"),
         error: error instanceof Error ? error.message : "Unknown error",
         code: cause?.code,
       });
     }
-    return Response.json({ message: "Unable to contact the API or verify your session. Please try again." }, { status: 503, headers: privateHeaders });
+    const message = stage === "authentication"
+      ? "Sign-in verification is temporarily unavailable. Please try again."
+      : stage === "configuration"
+        ? "The API connection is not configured correctly. Please contact support."
+        : "The studio API is temporarily unavailable. Please try again.";
+    return Response.json({ message }, { status: 503, headers: privateHeaders });
   }
 }
 

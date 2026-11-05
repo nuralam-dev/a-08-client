@@ -1,6 +1,7 @@
 
 "use client";
 
+import { apiError } from "@/lib/api-error";
 import { useState, type FormEvent } from "react";
 import type { Facility } from "@/types/facility";
 import { toast } from "sonner";
@@ -64,7 +65,9 @@ export default function AddFacilityForm({ facility: initialFacility, onSaved, on
     const newFacility = {
       name: String(facility.name ?? "").trim(),
       category: String(facility.category ?? "").trim(),
-      image: String(facility.image ?? "").trim(),
+      image: initialFacility && Array.isArray(initialFacility.image) && String(facility.image ?? "").trim() === initialFacility.image[0]
+        ? initialFacility.image
+        : String(facility.image ?? "").trim(),
       location: String(facility.location ?? "").trim(),
       pricePerHour: Number(facility.pricePerHour),
       capacity: Number(facility.capacity),
@@ -119,7 +122,7 @@ export default function AddFacilityForm({ facility: initialFacility, onSaved, on
       }
       if (response.status === 403) throw new Error("You can only update facilities you added.");
       if (!response.ok) {
-        throw new Error(initialFacility ? "Failed to update facility" : "Failed to add facility");
+        throw await apiError(response, initialFacility ? "Failed to update facility" : "Failed to add facility");
       }
 
       const data = await response.json();
@@ -209,7 +212,7 @@ export default function AddFacilityForm({ facility: initialFacility, onSaved, on
                 </SelectTrigger>
 
                 <SelectContent>
-                  {studioCategories.map((item) => (
+                  {[...new Set([...studioCategories, ...(initialFacility ? [initialFacility.category] : [])])].map((item) => (
                     <SelectItem
                       key={item}
                       value={item}

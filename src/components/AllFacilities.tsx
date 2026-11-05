@@ -1,7 +1,8 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { FaMagnifyingGlass } from "react-icons/fa6";
 import FacilityCard from "@/components/FacilityCard";
 import { Input } from "@/components/ui/input";
@@ -9,6 +10,13 @@ import type { Facility } from "@/types/facility";
 import { fetchFacilities } from "@/lib/facilities";
 
 export default function AllFacilities() {
+  return <Suspense fallback={<p role="status" className="p-12 text-center">Loading studios…</p>}><FacilitiesExplorer /></Suspense>;
+}
+
+function FacilitiesExplorer() {
+  const params = useSearchParams();
+  const router = useRouter();
+  const category = params.get("category") || "";
   const [facilities, setFacilities] = useState<Facility[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -35,9 +43,9 @@ export default function AllFacilities() {
 
   // Filter facilities by name, category, or location
   const filteredFacilities = facilities.filter((facility) => {
-    const searchText = search.toLowerCase();
+    const searchText = search.trim().toLowerCase();
 
-    return (
+    return (!category || facility.category === category) && (
       facility.name.toLowerCase().includes(searchText) ||
       facility.category.toLowerCase().includes(searchText) ||
       facility.location.toLowerCase().includes(searchText)
@@ -51,7 +59,7 @@ export default function AllFacilities() {
         {/* Page Heading */}
         <div className="mb-10 text-center">
           <h1 className="text-3xl font-bold text-slate-900 md:text-4xl">
-            All Facilities
+            Find your next creative space
           </h1>
 
           <p className="mt-3 text-slate-500">
@@ -81,6 +89,16 @@ export default function AllFacilities() {
               className="h-12 rounded-xl bg-white pl-11"
             />
           </div>
+        </div>
+
+        <div className="mb-8 flex flex-wrap gap-2" aria-label="Filter by category">
+          {["", ...new Set([...facilities.map((facility) => facility.category), ...(category ? [category] : [])])].map((value) => (
+            <button key={value} type="button" aria-pressed={category === value}
+              onClick={() => router.replace(value ? `/facilities?category=${encodeURIComponent(value)}` : "/facilities", { scroll: false })}
+              className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${category === value ? "border-green-700 bg-green-700 text-white" : "border-slate-200 bg-white text-slate-600 hover:border-green-600 hover:text-green-700"}`}>
+              {value || "All spaces"}
+            </button>
+          ))}
         </div>
 
         {/* Loading */}

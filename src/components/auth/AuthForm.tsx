@@ -25,6 +25,7 @@ import { Separator } from "@/components/ui/separator";
 
 interface AuthFormProps {
   mode: "signin" | "signup";
+  googleEnabled?: boolean;
 }
 
 function getRedirectPath(requestedPath: string) {
@@ -43,15 +44,15 @@ function getRedirectPath(requestedPath: string) {
   return "/";
 }
 
-export default function AuthForm({ mode }: AuthFormProps) {
+export default function AuthForm({ mode, googleEnabled = false }: AuthFormProps) {
   return (
     <Suspense fallback={<p className="p-8 text-center">Loading...</p>}>
-      <AuthFormContent mode={mode} />
+      <AuthFormContent mode={mode} googleEnabled={googleEnabled} />
     </Suspense>
   );
 }
 
-function AuthFormContent({ mode }: AuthFormProps) {
+function AuthFormContent({ mode, googleEnabled }: AuthFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const requestedPath = searchParams.get("next") || "/";
@@ -288,6 +289,7 @@ function AuthFormContent({ mode }: AuthFormProps) {
               </Button>
             </form>
 
+            {googleEnabled && <>
             {/* Divider */}
             <div className="my-7 flex items-center gap-4">
               <Separator className="flex-1" />
@@ -308,6 +310,7 @@ function AuthFormContent({ mode }: AuthFormProps) {
               <FaGoogle />
               Continue with Google
             </Button>
+            </>}
 
             {/* Switch between forms */}
             <p className="mt-7 text-center text-sm text-slate-500">

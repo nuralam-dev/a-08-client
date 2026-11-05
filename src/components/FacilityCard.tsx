@@ -25,7 +25,7 @@ export default function FacilityCard({
   facility,
 }: FacilityCardProps) {
   return (
-    <Card className="overflow-hidden rounded-2xl border border-gray-200 bg-white p-0 shadow-sm transition-shadow hover:shadow-lg">
+    <Card className="overflow-hidden rounded-2xl border border-gray-200 bg-white p-0 shadow-sm transition-all duration-200 motion-safe:hover:-translate-y-1 hover:shadow-lg">
 
       {/* Facility Image */}
       <div className="relative h-56 w-full">
@@ -79,7 +79,7 @@ export default function FacilityCard({
         {/* View Details Button */}
         <Button
           render={<Link href={`/facilities/${facility._id}`} />}
-          nativeButton={false}
+          nativeButton={false} role="link"
           className="w-full bg-green-600 text-white hover:bg-green-700"
         >
             View Details

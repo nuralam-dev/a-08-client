@@ -30,6 +30,7 @@ const categories = [
 
 export default function Footer() {
   const [email, setEmail] = useState("");
+  const [subscriptionMessage, setSubscriptionMessage] = useState("");
 
   // Handle newsletter form
   const handleSubscribe = (e: FormEvent<HTMLFormElement>) => {
@@ -37,7 +38,7 @@ export default function Footer() {
 
     // Newsletter backend is not connected yet
     
-    setEmail("");
+    setSubscriptionMessage("Newsletter sign-ups are not available yet. Please check back soon.");
   };
 
   return (
@@ -50,11 +51,11 @@ export default function Footer() {
           {/* Brand Section */}
           <div>
             <Link href="/" className="flex items-center gap-2">
-              <MdOutlineCameraAlt className="text-3xl text-violet-400" />
+              <MdOutlineCameraAlt className="text-3xl text-green-400" />
 
               <span className="text-2xl font-bold">
                 Studio
-                <span className="text-violet-400">
+                <span className="text-green-400">
                   Space
                 </span>
               </span>
@@ -74,7 +75,7 @@ export default function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Facebook"
-                className="rounded-full border border-slate-700 p-3 transition-colors hover:border-violet-400 hover:text-violet-400"
+                className="rounded-full border border-slate-700 p-3 transition-colors hover:border-green-400 hover:text-green-400"
               >
                 <FaFacebookF size={16} />
               </a>
@@ -84,7 +85,7 @@ export default function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Instagram"
-                className="rounded-full border border-slate-700 p-3 transition-colors hover:border-violet-400 hover:text-violet-400"
+                className="rounded-full border border-slate-700 p-3 transition-colors hover:border-green-400 hover:text-green-400"
               >
                 <FaInstagram size={16} />
               </a>
@@ -94,7 +95,7 @@ export default function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="YouTube"
-                className="rounded-full border border-slate-700 p-3 transition-colors hover:border-violet-400 hover:text-violet-400"
+                className="rounded-full border border-slate-700 p-3 transition-colors hover:border-green-400 hover:text-green-400"
               >
                 <FaYoutube size={16} />
               </a>
@@ -104,7 +105,7 @@ export default function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="X"
-                className="rounded-full border border-slate-700 p-3 transition-colors hover:border-violet-400 hover:text-violet-400"
+                className="rounded-full border border-slate-700 p-3 transition-colors hover:border-green-400 hover:text-green-400"
               >
                 <FaXTwitter size={16} />
               </a>
@@ -123,7 +124,7 @@ export default function Footer() {
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-sm text-slate-400 transition-colors hover:text-violet-400"
+                    className="text-sm text-slate-400 transition-colors hover:text-green-400"
                   >
                     {link.name}
                   </Link>
@@ -145,7 +146,7 @@ export default function Footer() {
                     href={`/facilities?category=${encodeURIComponent(
                       category.value
                     )}`}
-                    className="text-sm text-slate-400 transition-colors hover:text-violet-400"
+                    className="text-sm text-slate-400 transition-colors hover:text-green-400"
                   >
                     {category.name}
                   </Link>
@@ -186,6 +187,7 @@ export default function Footer() {
                 <HiOutlineArrowRight className="ml-2" />
               </Button>
             </form>
+            {subscriptionMessage && <p role="status" className="mt-3 text-sm text-green-300">{subscriptionMessage}</p>}
           </div>
 
         </div>

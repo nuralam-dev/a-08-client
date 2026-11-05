@@ -13,7 +13,7 @@ function createAuth() {
   const { authBaseURL, trustedOrigins } = getAuthOrigins();
   if (isProduction && !process.env.BETTER_AUTH_SECRET) throw new Error("Set a private BETTER_AUTH_SECRET in the frontend server environment.");
 
-  const authMode = process.env.API_AUTH_MODE || "session";
+  const authMode = process.env.API_AUTH_MODE || "jwt";
   if (!["session", "jwt"].includes(authMode)) throw new Error("API_AUTH_MODE must be session or jwt.");
   const jwtEnabled = authMode === "jwt";
   if (isProduction && jwtEnabled && !process.env.JWT_AUDIENCE?.trim()) throw new Error("Set JWT_AUDIENCE to the same value on both servers.");

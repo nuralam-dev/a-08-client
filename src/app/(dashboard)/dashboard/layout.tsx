@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { Suspense, useState, type ReactNode } from "react";
 import { FaBars } from "react-icons/fa6";
 import Sidebar from "./_components/Sidebar";
 
@@ -19,10 +19,12 @@ export default function DashboardLayout({
     <div className="min-h-screen bg-slate-50">
       {/* Fixed Sidebar */}
      
-      <Sidebar
-        isOpen={isOpen}
-        onClose={() => setIsOpen(false)}
-      />
+      <Suspense fallback={<div className="fixed inset-y-0 left-0 hidden w-72 border-r bg-white lg:block" aria-label="Loading dashboard navigation" />}>
+        <Sidebar
+          isOpen={isOpen}
+          onClose={() => setIsOpen(false)}
+        />
+      </Suspense>
 
       {/* Main Content */}
       <div className="min-w-0 lg:ml-72">

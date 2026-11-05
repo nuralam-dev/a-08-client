@@ -20,7 +20,6 @@ const accountLinks = [
   { label: "My Bookings", href: "/dashboard/my-booking", icon: CalendarDays },
   { label: "Add Facility", href: "/dashboard/add-facility", icon: SquarePlus },
   { label: "Manage Facilities", href: "/dashboard/manage-facilities", icon: Settings },
-  { label: "My Facilities", href: "/dashboard/my-facility", icon: Settings },
 ];
 
 export default function AccountMenu({ loginHref }: { loginHref: string }) {
@@ -50,7 +49,7 @@ export default function AccountMenu({ loginHref }: { loginHref: string }) {
 
   if (!session?.user) {
     return (
-      <Button className="h-11 gap-2 rounded-full px-5 font-semibold" render={<Link href={loginHref} />} nativeButton={false}>
+      <Button className="h-11 gap-2 rounded-full px-5 font-semibold" render={<Link href={loginHref} />} nativeButton={false} role="link">
         Login <ArrowUpRight className="size-4" aria-hidden="true" />
       </Button>
     );
@@ -64,7 +63,7 @@ export default function AccountMenu({ loginHref }: { loginHref: string }) {
     <DropdownMenu>
       <DropdownMenuTrigger
         aria-label={`Account menu for ${name}`}
-        className="group flex h-14 max-w-64 cursor-pointer items-center gap-3 rounded-2xl border border-transparent bg-slate-50 px-3 text-slate-700 outline-none transition-colors hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-blue-600 data-popup-open:border-blue-600 data-popup-open:ring-2 data-popup-open:ring-blue-600 sm:px-4"
+        className="group flex h-14 max-w-64 cursor-pointer items-center gap-3 rounded-2xl border border-transparent bg-slate-50 px-3 text-slate-700 outline-none transition-colors hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-green-600 data-popup-open:border-green-600 data-popup-open:ring-2 data-popup-open:ring-green-600 sm:px-4"
       >
         <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-green-600 text-sm font-semibold text-white" aria-hidden="true">{initials}</span>
         <span className="hidden truncate text-base font-medium sm:block">{name}</span>

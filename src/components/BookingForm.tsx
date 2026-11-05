@@ -1,5 +1,6 @@
 "use client";
 
+import { apiError } from "@/lib/api-error";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +21,8 @@ const money = (amount: number) =>
 export default function BookingForm({ facility }: { facility: Facility }) {
   const router = useRouter();
   const { data: currentSession, isPending } = authClient.useSession();
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   const [date, setDate] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
@@ -51,6 +54,11 @@ export default function BookingForm({ facility }: { facility: Facility }) {
     }
     const form = event.currentTarget;
     const fields = new FormData(form);
+    const guests = Number(fields.get("guests"));
+    if (!Number.isSafeInteger(guests) || guests < 1 || guests > facility.capacity) {
+      setError(`Choose between 1 and ${facility.capacity} guests.`);
+      return;
+    }
     setLoading(true);
     try {
       const session = await authClient.getSession();
@@ -68,7 +76,7 @@ export default function BookingForm({ facility }: { facility: Facility }) {
           date,
           startTime,
           endTime,
-          guests: Number(fields.get("guests")),
+          guests,
         }),
       });
       if (response.status === 401) {
@@ -85,7 +93,7 @@ export default function BookingForm({ facility }: { facility: Facility }) {
           "This time slot is unavailable. Please choose another time.",
         );
       if (!response.ok)
-        throw new Error("Your booking could not be saved. Please try again.");
+        throw await apiError(response, "Your booking could not be saved");
       const result = await response.json();
       if (!result.insertedId && !result._id && !result.booking?._id) {
         throw new Error(
@@ -170,6 +178,7 @@ export default function BookingForm({ facility }: { facility: Facility }) {
               id="booking-date"
               name="date"
               type="date"
+              min={today}
               required
               value={date}
               onChange={(event) => setDate(event.target.value)}
@@ -263,7 +272,7 @@ export default function BookingForm({ facility }: { facility: Facility }) {
         {!isPending && !currentSession?.user ? (
           <Button
             render={<Link href={`/login?next=${encodeURIComponent(`/facilities/${facility._id}`)}`} />}
-            nativeButton={false}
+            nativeButton={false} role="link"
             className="h-12 w-full rounded-full bg-green-600 font-semibold text-white hover:bg-green-700"
           >
             Log in to book

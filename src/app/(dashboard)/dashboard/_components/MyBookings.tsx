@@ -33,6 +33,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+import { apiError } from "@/lib/api-error";
+import { isBooking } from "@/lib/bookings";
 import type { Booking } from "@/types/booking";
 
 const API_URL = "/api/backend";
@@ -104,26 +106,22 @@ export default function MyBookings() {
           return;
         }
         if (!response.ok) {
-          throw new Error("Failed to fetch bookings");
+          throw await apiError(response, "Unable to load bookings");
         }
 
         const data: unknown = await response.json();
         if (controller.signal.aborted) return;
 
-        // Handle both an array and a single booking object
-        if (Array.isArray(data)) {
-          setBookings(data as Booking[]);
-        } else if (data !== null && typeof data === "object" && "_id" in data) {
-          setBookings([data as Booking]);
-        } else {
-          throw new Error("Unexpected booking response");
+        if (!Array.isArray(data) || !data.every(isBooking)) {
+          throw new Error("The API returned invalid booking data. Please contact support.");
         }
+        setBookings(data);
         setLoadedUserId(userId);
       } catch (error) {
         if (controller.signal.aborted) return;
 
         console.error("Booking error:", error);
-        setError("Unable to load bookings. Please try again.");
+        setError(error instanceof Error ? error.message : "Unable to load bookings. Please try again.");
         setLoadedUserId(userId);
       } finally {
         if (!controller.signal.aborted) {
@@ -156,7 +154,7 @@ export default function MyBookings() {
       }
       if (response.status === 403) throw new Error("You can only delete your own bookings.");
       if (response.status === 404) throw new Error("Booking not found. It may already have been deleted.");
-      if (!response.ok) throw new Error("Unable to delete your booking. Please try again.");
+      if (!response.ok) throw await apiError(response, "Unable to delete your booking");
 
       const result = await response.json();
       if (result.acknowledged !== true || result.deletedCount !== 1) {
@@ -231,11 +229,8 @@ export default function MyBookings() {
               Start by exploring our creative studios
             </p>
 
-            <Button className="mt-6 bg-green-600 hover:bg-green-700">
-              <Link href="/facilities">
-                Browse Facilities
-                <FaArrowRight />
-              </Link>
+            <Button className="mt-6 bg-green-600 hover:bg-green-700" render={<Link href="/facilities" />} nativeButton={false} role="link">
+              Browse Facilities <FaArrowRight />
             </Button>
           </CardContent>
         </Card>
@@ -319,11 +314,10 @@ export default function MyBookings() {
                   <Button
                     variant="outline"
                     className="w-full border-green-600 text-green-700 hover:bg-green-50"
+                    render={<Link href={`/facilities/${booking.facilityId}`} />}
+                    nativeButton={false} role="link"
                   >
-                    <Link href={`/facilities/${booking.facilityId}`}>
-                      View Studio
-                      <FaArrowRight />
-                    </Link>
+                    View Studio <FaArrowRight />
                   </Button>
                   <Button
                     variant="destructive"

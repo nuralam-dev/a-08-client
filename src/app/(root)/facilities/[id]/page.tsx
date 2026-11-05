@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, MapPin, Users } from "lucide-react";
 import BookingForm from "@/components/BookingForm";
-import { readFacilitiesResponse } from "@/lib/facilities";
+import { isFacility } from "@/lib/facilities";
 import { connection } from "next/server";
 import { getBackendURL } from "@/lib/backend";
 
@@ -24,16 +24,16 @@ export default async function FacilityDetailsPage({
   const { id } = await params;
   await connection();
 
-  // The individual facility endpoint currently returns placeholder text.
-  // Resolve the selected studio from the working collection endpoint.
-  const response = await fetch(`${getBackendURL()}/facilities`, {
+  if (!/^[a-f0-9]{24}$/i.test(id)) notFound();
+  const response = await fetch(`${getBackendURL()}/facilities/${encodeURIComponent(id)}`, {
     cache: "no-store",
     redirect: "error",
     signal: AbortSignal.timeout(15000),
   });
-  const facilities = await readFacilitiesResponse(response);
-  const facility = facilities.find((item) => item._id === id);
-  if (!facility) notFound();
+  if (response.status === 404) notFound();
+  if (!response.ok) throw new Error(`Unable to load studio (HTTP ${response.status}).`);
+  const facility: unknown = await response.json();
+  if (!isFacility(facility)) throw new Error("The API returned invalid studio data.");
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-10 sm:px-6 lg:px-8">
