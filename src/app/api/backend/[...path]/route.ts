@@ -62,7 +62,20 @@ async function handleRequest(request: NextRequest, context: { params: Promise<{ 
         ...privateHeaders,
       },
     });
-  } catch {
+  } catch (error) {
+    if (process.env.NODE_ENV === "development") {
+      // Keep diagnostics server-side and never log cookies, JWTs, or request bodies.
+      const cause = error instanceof Error && error.cause && typeof error.cause === "object"
+        ? error.cause as { code?: string }
+        : undefined;
+      console.error("Backend proxy request failed", {
+        backend: process.env.BACKEND_URL?.trim() || process.env.NEXT_PUBLIC_API_URL?.trim() || "(development default)",
+        method,
+        path: path.join("/"),
+        error: error instanceof Error ? error.message : "Unknown error",
+        code: cause?.code,
+      });
+    }
     return Response.json({ message: "Unable to contact the API or verify your session. Please try again." }, { status: 503, headers: privateHeaders });
   }
 }
