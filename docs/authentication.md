@@ -1,5 +1,7 @@
 # StudioSpace authentication
 
+Current frontend deployment settings and backend availability results: [Vercel environment setup](vercel-environment.md).
+
 The assignment rubric and production deployment URLs were not present in either repository. JWT cannot be confirmed as a rubric requirement yet. The existing BetterAuth session login remains the default. Set `API_AUTH_MODE=jwt` on both servers if the assignment requires JWT verification for protected API requests.
 
 ## Sessions and JWTs
@@ -25,10 +27,10 @@ Express verifies the JWT signature using those public keys and checks the issuer
 Configure these in the **frontend Vercel project**, using its exact canonical production domain:
 
 ```dotenv
-BETTER_AUTH_URL=https://YOUR-FRONTEND.vercel.app
+BETTER_AUTH_URL=https://YOUR-ACTUAL-FRONTEND-DOMAIN.vercel.app
 BETTER_AUTH_SECRET=GENERATE_A_PRIVATE_RANDOM_SECRET_OF_AT_LEAST_32_CHARACTERS
 MONGODB_URI=YOUR_PRIVATE_AUTH_DATABASE_CONNECTION
-BACKEND_URL=https://YOUR-BACKEND.vercel.app
+BACKEND_URL=https://studiospace-server-ndqc56sxs-nur-alam1.vercel.app
 API_AUTH_MODE=session
 # Required on both servers when API_AUTH_MODE=jwt; values must match exactly:
 JWT_AUDIENCE=studiospace-api
@@ -45,8 +47,8 @@ Configure these in the **backend Vercel project**:
 
 ```dotenv
 MONGODB_URI=YOUR_PRIVATE_STUDIO_DATABASE_CONNECTION
-CLIENT_ORIGIN=https://YOUR-FRONTEND.vercel.app
-AUTH_BASE_URL=https://YOUR-FRONTEND.vercel.app
+CLIENT_ORIGIN=https://YOUR-ACTUAL-FRONTEND-DOMAIN.vercel.app
+AUTH_BASE_URL=https://YOUR-ACTUAL-FRONTEND-DOMAIN.vercel.app
 API_AUTH_MODE=session
 JWT_AUDIENCE=studiospace-api
 ```
@@ -60,13 +62,13 @@ For local development, use `http://localhost:3000` for the auth/frontend origins
 Keep the current Google button and BetterAuth sign-in flow. Add these authorized redirect URIs in the Google Cloud OAuth client:
 
 - `http://localhost:3000/api/auth/callback/google`
-- `https://YOUR-FRONTEND.vercel.app/api/auth/callback/google`
+- `https://YOUR-ACTUAL-FRONTEND-DOMAIN.vercel.app/api/auth/callback/google`
 
 Use the corresponding Google client ID and secret on the frontend server. No Google provider credentials were configured in the inspected local environment, so an actual Google account login cannot be verified until they are supplied. Never paste secrets into frontend code or this document.
 
 ## Deployment verification
 
-The real production domains were not supplied; no deployment or production login has been verified. After setting the actual domains and redeploying:
+The backend URL is configured above. The production frontend domain has not been supplied; production login has not been verified. After setting the actual domains and redeploying:
 
 1. Sign in with email/password and Google. Inspect the browser cookie for HttpOnly, Secure, SameSite=Lax, and a host-only frontend scope.
 2. Verify anonymous public facility pages load and private dashboard visits redirect to login.
