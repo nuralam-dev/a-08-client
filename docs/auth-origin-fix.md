@@ -1,59 +1,35 @@
-# Production authentication origin fix
+# Production authentication findings — November 5, 2026
 
-## Cause confirmed on November 5, 2026
+## Root cause and limits
 
-Vercel's current Production environment had:
+The working copy of `src/lib/auth.ts` had an existing uncommitted edit that removed the MongoDB adapter import and `database` option. It constructed an unused MongoClient and bypassed the validated base URL and trusted origins. This is a confirmed local defect: BetterAuth was no longer configured to persist users and sessions in the intended MongoDB database. The fix restores `mongodbAdapter(db, { client })`, `baseURL: authBaseURL`, and the exact validated `trustedOrigins` list.
 
-```text
-BETTER_AUTH_URL=https://studiospace-client-6ra7owdjf-nur-alam1.vercel.app
-NEXT_PUBLIC_AUTH_URL=(unset)
-API_AUTH_MODE=(unset; existing default is session)
-JWT_AUDIENCE=(unset)
-```
+The historical `Invalid origin` error is consistent with an earlier mismatched allowlist, but it is not reproducible on the supplied production origin now. Current Vercel Production has the exact ruby frontend origin in both `BETTER_AUTH_URL` and `AUTH_TRUSTED_ORIGINS`. Do not assume older topaz/deployment-specific domains in historical notes are current approvals. The current deployment is not proven to contain the broken working-copy edit.
 
-The supplied browser page uses origin `https://studiospace-client-icm9qam2d-nur-alam1.vercel.app`. The original code configured `baseURL` from `BETTER_AUTH_URL` and `trustedOrigins: [baseURL]`, trusting the older deployment rather than the current page. BetterAuth rejects an untrusted signup/signin origin with `Invalid origin`. The current Production settings were read using the authenticated Vercel CLI; these do not independently prove what values were embedded in every historical build.
+Production auth secret presence and minimum length were verified without printing it. A read-only ping to the configured frontend auth database succeeded. Express `/health` independently reports its database connected. This proves connectivity, not successful production signup or cookie persistence.
 
-`vercel inspect` confirmed this is a Production deployment and lists these aliases:
+## Actual deployed requests
 
-- `https://studiospace-client-topaz.vercel.app` — use this stable project alias as canonical.
-- `https://studiospace-client-nur-alam1.vercel.app` — another alias; not automatically trusted by this fix.
+| Request | Status | Result |
+| --- | --- | --- |
+| Frontend GET /api/auth/get-session without cookies | 200 | null |
+| POST /api/auth/sign-in/email with a fake account, approved origin | 401 | Invalid email or password |
+| POST /api/auth/sign-up/email with deliberately invalid email/password | 400 | Validation error; no account created |
+| POST signin with an untrusted origin | 403 | Invalid origin |
+| Backend GET /health | 200 | database connected |
 
-Read-only `/api/auth/get-session` on the stable topaz alias returned HTTP 200 with `null` (no session cookie supplied). The supplied deployment-specific domain returned HTTP 302 to Vercel Authentication without a Vercel login. That protection is separate from BetterAuth origin validation and was not changed.
+Headless Chrome submitted the deployed login form with a fake account, confirmed same-origin `/api/auth/sign-in/email` returned 401, and verified the actual credential error appeared. A browser fetch from the registration page with invalid data returned 400. No real credentials were used, and no account was created or MongoDB data deleted.
 
-## Exact manual Vercel changes
+## Changes and verification
 
-In the **studiospace-client** project → Settings → Environment Variables → **Production**:
+- `src/lib/auth.ts`: restores MongoDB persistence and validated origin settings; email/password remains enabled; private secret validation, JWT plugin, CSRF and secure host-only cookies remain intact.
+- `src/app/api/auth/[...all]/route.ts`: uncaught configuration/infrastructure errors return safe JSON 503; BetterAuth status codes such as 400, 401 and 403 pass through unchanged.
+- `src/lib/auth-error.ts` and `src/components/auth/AuthForm.tsx`: display actual client errors; service failures and rate limits have distinct messages; no generic invalid-credentials fallback for unknown failures and no raw auth exception logging in the browser.
+- `scripts/check-auth.cjs`: uses the supplied production domains with isolated memory storage, tests signup/signin/session cookies, exact origins, JWT claims, dashboard protection, and the actual Next.js backend handler forwarding a verified JWT and session cookie. Browser-supplied authorization is replaced. Foreign mutation origins are rejected. No database connection or writes occur in this suite.
+- Deployment documentation now uses the supplied stable production domains.
 
-```dotenv
-BETTER_AUTH_URL=https://studiospace-client-topaz.vercel.app
-AUTH_TRUSTED_ORIGINS=https://studiospace-client-icm9qam2d-nur-alam1.vercel.app
-```
+See [the current environment checklist](vercel-environment.md) for exact values and manual completion. No commit, push, deployment, secret update, project creation, or database deletion was performed.
 
-Keep `NEXT_PUBLIC_AUTH_URL` unset. If you retain it, it must equal `https://studiospace-client-topaz.vercel.app`. Do not point authentication at Express. Preserve `BETTER_AUTH_SECRET`, `MONGODB_URI`, and existing provider secrets. Do not change authentication mode as part of this origin correction.
+Completed checks: `node scripts/check-auth.cjs`, `npx tsc --noEmit`, `npm run lint`, `npm run build`, and `git diff --check` all passed. The build used unchanged local environment files and verifies compilation, not production authentication. Production network and browser results above were tested separately. The temporary environment download used for the read-only audit was removed.
 
-The canonical origin is always trusted. `AUTH_TRUSTED_ORIGINS` is an optional, server-only, comma-separated list of exact additional frontend origins you deliberately approve. The setting above trusts the specific deployment requested in this task. Replace or remove obsolete entries when deployments change; no Vercel wildcard or request-header inference is used. In Production, localhost, HTTP, paths, credentials, query strings, and wildcard origins are rejected. Review Preview variables separately; Production settings should not be replaced by localhost values.
-
-In the backend project, align `CLIENT_URL` and `AUTH_BASE_URL` with `https://studiospace-client-topaz.vercel.app`. Preserve the current authentication mode. If JWT mode is already used or enabled separately, keep both applications' `API_AUTH_MODE=jwt` and matching `JWT_AUDIENCE`; `AUTH_BASE_URL` must match the canonical issuer because the backend loads `/api/auth/jwks` there. Changing a JWT issuer can invalidate tokens issued under the previous issuer. Prefer using the canonical website for sign-in and dashboard use.
-
-Manually redeploy the frontend with the updated code and settings; redeploy the backend if its settings change. No environment values were changed remotely and no deployment was performed in this task.
-
-For Google login, retain the provider configuration and register the canonical callback `https://studiospace-client-topaz.vercel.app/api/auth/callback/google` in Google's authorized redirect URIs if that provider is enabled.
-
-## Code changes
-
-- `src/lib/auth-origins.ts`: validates the canonical origin and explicit additional origins, with separate development/production validation.
-- `src/lib/auth.ts`: uses those validated origins; preserves MongoDB adapter, email/password, session lookup, HTTP-only cookies, and JWT configuration.
-- `src/lib/auth-client.ts`: browser requests explicitly use the current page origin and `/api/auth`, so an old public URL cannot send login cookies to another host.
-- `src/app/api/backend/[...path]/route.ts`: protected writes use the same exact allowlist as BetterAuth. Session/JWT checks remain mandatory; missing and untrusted origins are still rejected.
-- `.env.example`: documents the optional allowlist and canonical Production settings.
-- `scripts/check-auth.cjs`: exercises the real auth and dashboard guard configuration with isolated memory storage in place of the MongoDB adapter. Run `node scripts/check-auth.cjs`. No MongoDB connection or production account creation occurs.
-
-Cookies remain host-only. A login on a deployment alias does not log the browser into the stable domain; use the same host for sign-in and the dashboard. Do not broaden cookie domains to work around this.
-
-## Local development and verification
-
-Keep local `BETTER_AUTH_URL=http://localhost:3000` and `NEXT_PUBLIC_AUTH_URL=http://localhost:3000` (or unset the public value). Leave `AUTH_TRUSTED_ORIGINS` empty unless you deliberately use another local frontend port. Do not copy the Production alias list into local settings.
-
-The isolated checks cover signup, signin, secure HTTP-only session cookies, session retrieval, anonymous dashboard redirects, authenticated dashboard access, valid JWT signature/issuer/audience/session claims, disabled browser token endpoint, rejection of untrusted origins and wildcards, and separate localhost configuration. Actual production signup was not attempted because it would create a production database record. After manual redeployment, verify signup/signin yourself on the canonical domain, `/api/auth/get-session` with the resulting cookie, and `/dashboard/add-facility`.
-
-BetterAuth documents its base URL and trusted-origin behavior in [Options](https://better-auth.com/docs/reference/options) and its CSRF/origin checks in [Security](https://better-auth.com/docs/reference/security). Origin validation and CSRF protection remain enabled.
+The configuration follows BetterAuth's [MongoDB adapter](https://better-auth.com/docs/adapters/mongodb), [options](https://better-auth.com/docs/reference/options), and [security](https://better-auth.com/docs/reference/security) documentation.

@@ -14,6 +14,7 @@ import {
 } from "react-icons/fa6";
 
 import { authClient } from "@/lib/auth-client";
+import { authErrorMessage } from "@/lib/auth-error";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -109,7 +110,7 @@ function AuthFormContent({ mode, googleEnabled }: AuthFormProps) {
         });
 
         if (result.error) {
-          toast.error(result.error.message || "Registration failed");
+          toast.error(authErrorMessage(result.error, "Registration failed"));
           return;
         }
 
@@ -124,7 +125,7 @@ function AuthFormContent({ mode, googleEnabled }: AuthFormProps) {
         });
 
         if (result.error) {
-          toast.error(result.error.message || "Invalid credentials");
+          toast.error(authErrorMessage(result.error, "Sign-in failed"));
           return;
         }
 
@@ -132,9 +133,8 @@ function AuthFormContent({ mode, googleEnabled }: AuthFormProps) {
         router.replace(redirectTo);
         router.refresh();
       }
-    } catch (error) {
-      console.error("Authentication error:", error);
-      toast.error("Something went wrong. Please try again.");
+    } catch {
+      toast.error("Unable to reach authentication. Please check your connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -151,10 +151,9 @@ function AuthFormContent({ mode, googleEnabled }: AuthFormProps) {
       });
 
       if (result.error) {
-        toast.error(result.error.message || "Google sign-in failed");
+        toast.error(authErrorMessage(result.error, "Google sign-in failed"));
       }
-    } catch (error) {
-      console.error("Google sign-in error:", error);
+    } catch {
       toast.error("Unable to sign in with Google");
     } finally {
       setLoading(false);

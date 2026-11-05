@@ -7,8 +7,8 @@ const vm = require("node:vm");
 const ts = require("typescript");
 const { memoryAdapter } = require("@better-auth/memory-adapter");
 
-const canonical = "https://studiospace-client-topaz.vercel.app";
-const deployment = "https://studiospace-client-icm9qam2d-nur-alam1.vercel.app";
+const canonical = "https://studiospace-client-ruby.vercel.app";
+const deployment = canonical;
 const environment = {
   NODE_ENV: "production",
   BETTER_AUTH_URL: canonical,
@@ -17,9 +17,11 @@ const environment = {
   MONGODB_URI: "mongodb://unused.invalid/test",
   API_AUTH_MODE: "jwt",
   JWT_AUDIENCE: "studiospace-api",
+  BACKEND_URL: "https://studiospace-server-five-nu.vercel.app",
 };
 const database = { user: [], account: [], session: [], verification: [], jwks: [] };
 const cache = new Map();
+let upstreamRequest;
 function load(relative) {
   const filename = path.resolve(relative);
   if (cache.has(filename)) return cache.get(filename);
@@ -30,6 +32,10 @@ function load(relative) {
   }).outputText;
   vm.runInNewContext(code, {
     exports, process: { env: environment }, console, URL, Request, Response, Headers, AbortSignal,
+    fetch: async (url, options) => {
+      upstreamRequest = { url, options };
+      return Response.json({ ok: true });
+    },
     require(name) {
       if (name === "server-only") return {};
       if (name.startsWith("@/")) return load(`src/${name.slice(2)}.ts`);
@@ -44,7 +50,7 @@ function load(relative) {
 
 async function main() {
   const { getAuthOrigins } = load("src/lib/auth-origins.ts");
-  assert.deepEqual(Array.from(getAuthOrigins().trustedOrigins), [canonical, deployment]);
+  assert.deepEqual(Array.from(getAuthOrigins().trustedOrigins), [canonical]);
   for (const invalid of ["https://*.vercel.app", "http://localhost:3000", "https://example.com/api", "https://user:pass@example.com"]) {
     environment.AUTH_TRUSTED_ORIGINS = invalid;
     assert.throws(getAuthOrigins);
@@ -84,12 +90,30 @@ async function main() {
   const jwksResponse = await auth.handler(new Request(`${canonical}/api/auth/jwks`));
   assert.equal(jwksResponse.status, 200);
   const { jwtVerify, createLocalJWKSet } = require("jose");
-  const verified = await jwtVerify(token, createLocalJWKSet(await jwksResponse.json()), { issuer: canonical, audience: "studiospace-api" });
+  const publicKeys = await jwksResponse.json();
+  const verified = await jwtVerify(token, createLocalJWKSet(publicKeys), { issuer: canonical, audience: "studiospace-api" });
   assert.equal(verified.payload.sub, session.user.id);
   assert.equal(verified.payload.sid, session.session.id);
   assert.equal((await auth.handler(new Request(`${canonical}/api/auth/token`, { headers: { cookie } }))).status, 404);
 
   const { NextRequest } = require("next/server");
+  const backend = load("src/app/api/backend/[...path]/route.ts");
+  const forwarded = await backend.GET(new NextRequest(`${canonical}/api/backend/facilities/mine`, {
+    headers: { cookie, authorization: "Bearer browser-supplied-untrusted-token" },
+  }), { params: Promise.resolve({ path: ["facilities", "mine"] }) });
+  assert.equal(forwarded.status, 200);
+  assert.equal(upstreamRequest.url.origin, environment.BACKEND_URL);
+  assert.equal(upstreamRequest.options.headers.get("cookie"), cookie);
+  const forwardedToken = upstreamRequest.options.headers.get("authorization").replace(/^Bearer /, "");
+  assert.notEqual(forwardedToken, "browser-supplied-untrusted-token");
+  await jwtVerify(forwardedToken, createLocalJWKSet(publicKeys), { issuer: canonical, audience: "studiospace-api" });
+  const rejected = await backend.POST(new NextRequest(`${canonical}/api/backend/facilities`, {
+    method: "POST", headers: { cookie, origin: "https://untrusted.example.com" },
+  }), { params: Promise.resolve({ path: ["facilities"] }) });
+  assert.equal(rejected.status, 403);
+  const { authErrorMessage } = load("src/lib/auth-error.ts");
+  assert.match(authErrorMessage({ status: 503 }, "Sign-in failed"), /temporarily unavailable/);
+  assert.equal(authErrorMessage({ status: 401, message: "Invalid email or password" }, "Sign-in failed"), "Invalid email or password");
   const { proxy } = load("src/proxy.ts");
   const anonymous = await proxy(new NextRequest(`${deployment}/dashboard/add-facility`));
   assert.equal(anonymous.status, 307);
