@@ -1,14 +1,18 @@
 
 import Link from "next/link";
+import { connection } from "next/server";
 import { FaArrowRight } from "react-icons/fa6";
 
 import FacilityCard from "./FacilityCard";
 import type { Facility } from "@/types/facility";
 
 async function getFeaturedFacilities(): Promise<Facility[]> {
+  // Fetch fresh listings after a request arrives, outside prerendering.
+  await connection();
+
   try {
     const response = await fetch(
-      "http://localhost:4000/facilities",
+      `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/facilities`,
       {
         cache: "no-store",
       }

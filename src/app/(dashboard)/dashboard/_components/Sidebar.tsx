@@ -31,7 +31,12 @@ const menuItems = [
   },
   {
     name: "Manage Facilities",
-    href: "/my-facility",
+    href: "/dashboard/manage-facilities",
+    icon: FaGear,
+  },
+  {
+    name: "My Facilities",
+    href: "/dashboard/my-facility",
     icon: FaGear,
   },
 ];

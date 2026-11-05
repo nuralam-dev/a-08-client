@@ -19,7 +19,8 @@ import {
 const accountLinks = [
   { label: "My Bookings", href: "/dashboard/my-booking", icon: CalendarDays },
   { label: "Add Facility", href: "/dashboard/add-facility", icon: SquarePlus },
-  { label: "Manage Facilities", href: "/my-facility", icon: Settings },
+  { label: "Manage Facilities", href: "/dashboard/manage-facilities", icon: Settings },
+  { label: "My Facilities", href: "/dashboard/my-facility", icon: Settings },
 ];
 
 export default function AccountMenu({ loginHref }: { loginHref: string }) {
