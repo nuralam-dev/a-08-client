@@ -1,5 +1,7 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+StudioSpace deployment configuration: [Vercel environment setup](docs/vercel-environment.md). Use the safe [.env.example](.env.example) as a reference for `.env.local`; keep existing secrets unchanged.
+
 ## Getting Started
 
 First, run the development server:
