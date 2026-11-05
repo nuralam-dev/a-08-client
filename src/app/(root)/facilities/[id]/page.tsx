@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, MapPin, Users } from "lucide-react";
 import BookingForm from "@/components/BookingForm";
-import type { Facility } from "@/types/facility";
+import { readFacilitiesResponse } from "@/lib/facilities";
 import { connection } from "next/server";
 import { getBackendURL } from "@/lib/backend";
 
@@ -26,10 +26,12 @@ export default async function FacilityDetailsPage({
 
   // The individual facility endpoint currently returns placeholder text.
   // Resolve the selected studio from the working collection endpoint.
-  const response = await fetch(`${getBackendURL()}/facilities`, { cache: "no-store" });
-  if (!response.ok) throw new Error("Unable to load studio details");
-
-  const facilities: Facility[] = await response.json();
+  const response = await fetch(`${getBackendURL()}/facilities`, {
+    cache: "no-store",
+    redirect: "error",
+    signal: AbortSignal.timeout(15000),
+  });
+  const facilities = await readFacilitiesResponse(response);
   const facility = facilities.find((item) => item._id === id);
   if (!facility) notFound();
 

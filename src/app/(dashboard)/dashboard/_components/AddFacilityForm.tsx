@@ -230,7 +230,7 @@ export default function AddFacilityForm({ facility: initialFacility, onSaved, on
               <Input
                 id="image"
                 name="image"
-                defaultValue={initialFacility?.image}
+                defaultValue={Array.isArray(initialFacility?.image) ? initialFacility.image[0] : initialFacility?.image}
                 type="url"
                 required
                 placeholder="https://example.com/studio.jpg"

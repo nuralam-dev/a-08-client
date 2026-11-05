@@ -3,7 +3,7 @@ export interface Facility {
   ownerId?: string;
   name: string;
   category: string;
-  image: string;
+  image: string | string[];
   location: string;
   pricePerHour: number;
   capacity: number;

@@ -6,8 +6,9 @@ import { FaArrowRight } from "react-icons/fa6";
 
 import FacilityCard from "./FacilityCard";
 import type { Facility } from "@/types/facility";
+import { readFacilitiesResponse } from "@/lib/facilities";
 
-async function getFeaturedFacilities(): Promise<Facility[]> {
+async function getFeaturedFacilities(): Promise<{ facilities: Facility[]; error: boolean }> {
   // Fetch fresh listings after a request arrives, outside prerendering.
   await connection();
 
@@ -16,24 +17,21 @@ async function getFeaturedFacilities(): Promise<Facility[]> {
       `${getBackendURL()}/facilities`,
       {
         cache: "no-store",
+        redirect: "error",
+        signal: AbortSignal.timeout(15000),
       }
     );
 
-    if (!response.ok) {
-      throw new Error("Failed to fetch facilities");
-    }
-
-    const facilities: Facility[] = await response.json();
-
-    return facilities.slice(0, 6);
+    const facilities = await readFacilitiesResponse(response);
+    return { facilities: facilities.slice(0, 6), error: false };
   } catch (error) {
     console.error("Error fetching facilities:", error);
-    return [];
+    return { facilities: [], error: true };
   }
 }
 
 export default async function FeaturedFacilities() {
-  const facilities = await getFeaturedFacilities();
+  const { facilities, error } = await getFeaturedFacilities();
 
   return (
     <section className="bg-slate-50 py-16 md:py-20">
@@ -61,7 +59,11 @@ export default async function FeaturedFacilities() {
         </div>
 
         {/* Facilities Grid */}
-        {facilities.length > 0 ? (
+        {error ? (
+          <div role="alert" className="rounded-xl border bg-white p-12 text-center text-red-600">
+            Unable to load featured facilities. Please try again later.
+          </div>
+        ) : facilities.length > 0 ? (
           <div className="grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
             {facilities.map((facility) => (
               <FacilityCard

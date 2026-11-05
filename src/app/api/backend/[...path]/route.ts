@@ -17,12 +17,7 @@ async function handleRequest(request: NextRequest, context: { params: Promise<{ 
     (bookingId && method === "DELETE");
   if (!allowed) return Response.json({ message: "Route not found." }, { status: 404 });
 
-  const { auth, authBaseURL, jwtEnabled } = getAuth();
   const privateHeaders = { "Cache-Control": "private, no-store" };
-  // Same-origin cookies authenticate browser requests. Reject cross-site writes before forwarding.
-  if (!isRead && request.headers.get("origin") !== authBaseURL) {
-    return Response.json({ message: "This request origin is not allowed." }, { status: 403, headers: privateHeaders });
-  }
 
   try {
     const upstreamHeaders = new Headers();
@@ -30,6 +25,11 @@ async function handleRequest(request: NextRequest, context: { params: Promise<{ 
     if (contentType) upstreamHeaders.set("content-type", contentType);
 
     if (!publicRead) {
+      const { auth, authBaseURL, jwtEnabled } = getAuth();
+      // Keep origin and session checks on every protected operation.
+      if (!isRead && request.headers.get("origin") !== authBaseURL) {
+        return Response.json({ message: "This request origin is not allowed." }, { status: 403, headers: privateHeaders });
+      }
       const session = await auth.api.getSession({ headers: request.headers, query: { disableCookieCache: true } });
       if (!session) return Response.json({ message: "Please log in to continue." }, { status: 401, headers: privateHeaders });
       upstreamHeaders.set("cookie", request.headers.get("cookie") || "");
@@ -46,9 +46,15 @@ async function handleRequest(request: NextRequest, context: { params: Promise<{ 
       headers: upstreamHeaders,
       ...(!isRead ? { body: await request.text() } : {}),
       cache: "no-store",
-      redirect: "error",
+      redirect: "manual",
       signal: AbortSignal.timeout(15000),
     });
+    if (response.status >= 300 && response.status < 400) {
+      return Response.json({ message: "The API redirected instead of returning data. Check its URL and Vercel Deployment Protection." }, { status: 502, headers: privateHeaders });
+    }
+    if (method !== "HEAD" && response.status !== 204 && !response.headers.get("content-type")?.includes("application/json")) {
+      return Response.json({ message: "The API returned an invalid response. Check its URL and deployment access." }, { status: 502, headers: privateHeaders });
+    }
     return new Response(method === "HEAD" || response.status === 204 ? null : await response.text(), {
       status: response.status,
       headers: {

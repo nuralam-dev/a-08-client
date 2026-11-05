@@ -6,8 +6,7 @@ import { FaMagnifyingGlass } from "react-icons/fa6";
 import FacilityCard from "@/components/FacilityCard";
 import { Input } from "@/components/ui/input";
 import type { Facility } from "@/types/facility";
-
-const API_URL = "/api/backend";
+import { fetchFacilities } from "@/lib/facilities";
 
 export default function AllFacilities() {
   const [facilities, setFacilities] = useState<Facility[]>([]);
@@ -16,28 +15,22 @@ export default function AllFacilities() {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
+    const controller = new AbortController();
     async function getFacilities() {
       try {
-        const response = await fetch(
-          `${API_URL}/facilities`
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to load facilities");
-        }
-
-        const data: Facility[] = await response.json();
-
+        const data = await fetchFacilities(controller.signal);
         setFacilities(data);
       } catch (error) {
+        if (controller.signal.aborted) return;
         console.error("Error fetching facilities:", error);
-        setError("Unable to load facilities. Please try again.");
+        setError(error instanceof Error ? error.message : "Unable to load facilities. Please try again.");
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     }
 
     getFacilities();
+    return () => controller.abort();
   }, []);
 
   // Filter facilities by name, category, or location
@@ -73,7 +66,7 @@ export default function AllFacilities() {
           <p className="font-medium text-slate-600">
             {loading
               ? "Loading facilities..."
-              : `Showing ${filteredFacilities.length} of ${facilities.length} facilities`}
+              : error ? "Facilities unavailable" : `Showing ${filteredFacilities.length} of ${facilities.length} facilities`}
           </p>
 
           <div className="relative w-full sm:max-w-sm">
@@ -81,6 +74,7 @@ export default function AllFacilities() {
 
             <Input
               type="text"
+              aria-label="Search facilities"
               placeholder="Search facilities..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -113,7 +107,7 @@ export default function AllFacilities() {
         {/* Error */}
         {!loading && error && (
           <div className="rounded-2xl border bg-white p-12 text-center">
-            <p className="text-red-600">{error}</p>
+            <p role="alert" className="text-red-600">{error}</p>
           </div>
         )}
 
@@ -133,7 +127,7 @@ export default function AllFacilities() {
         {!loading && !error && filteredFacilities.length === 0 && (
           <div className="rounded-2xl border bg-white p-12 text-center">
             <h2 className="text-xl font-semibold text-slate-800">
-              No facilities found
+              No facilities found.
             </h2>
 
             <p className="mt-2 text-slate-500">
