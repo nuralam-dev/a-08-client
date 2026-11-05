@@ -25,9 +25,9 @@ async function handleRequest(request: NextRequest, context: { params: Promise<{ 
     if (contentType) upstreamHeaders.set("content-type", contentType);
 
     if (!publicRead) {
-      const { auth, authBaseURL, jwtEnabled } = getAuth();
+      const { auth, trustedOrigins, jwtEnabled } = getAuth();
       // Keep origin and session checks on every protected operation.
-      if (!isRead && request.headers.get("origin") !== authBaseURL) {
+      if (!isRead && !trustedOrigins.includes(request.headers.get("origin") || "")) {
         return Response.json({ message: "This request origin is not allowed." }, { status: 403, headers: privateHeaders });
       }
       const session = await auth.api.getSession({ headers: request.headers, query: { disableCookieCache: true } });

@@ -5,19 +5,12 @@ import { MongoClient } from "mongodb";
 import { mongodbAdapter } from "@better-auth/mongo-adapter";
 import { jwt } from "better-auth/plugins";
 import { readOrigin } from "@/lib/backend";
+import { getAuthOrigins } from "@/lib/auth-origins";
 
 // Route modules are imported during next build. Initialize auth only when a request needs it.
 function createAuth() {
   const isProduction = process.env.NODE_ENV === "production";
-  const privateURL = process.env.BETTER_AUTH_URL?.trim();
-  const publicURL = process.env.NEXT_PUBLIC_AUTH_URL?.trim();
-  const configuredURL = privateURL || publicURL;
-  if (isProduction && !configuredURL) throw new Error("Set BETTER_AUTH_URL to your HTTPS frontend origin.");
-  const authBaseURL = readOrigin(configuredURL || "http://localhost:3000", privateURL ? "BETTER_AUTH_URL" : publicURL ? "NEXT_PUBLIC_AUTH_URL" : "Development auth origin");
-  if (process.env.NEXT_PUBLIC_AUTH_URL?.trim() &&
-      readOrigin(process.env.NEXT_PUBLIC_AUTH_URL.trim(), "NEXT_PUBLIC_AUTH_URL") !== authBaseURL) {
-    throw new Error("BETTER_AUTH_URL and NEXT_PUBLIC_AUTH_URL must use the same frontend origin.");
-  }
+  const { authBaseURL, trustedOrigins } = getAuthOrigins();
   if (isProduction && !process.env.BETTER_AUTH_SECRET) throw new Error("Set a private BETTER_AUTH_SECRET in the frontend server environment.");
 
   const authMode = process.env.API_AUTH_MODE || "session";
@@ -37,7 +30,7 @@ function createAuth() {
 
   const auth = betterAuth({
     baseURL: authBaseURL,
-    trustedOrigins: [authBaseURL],
+    trustedOrigins,
     database: mongodbAdapter(db, {
       client,
     }),
@@ -72,7 +65,7 @@ function createAuth() {
     disabledPaths: jwtEnabled ? ["/token"] : [],
   });
 
-  return { auth, authBaseURL, jwtEnabled };
+  return { auth, authBaseURL, trustedOrigins, jwtEnabled };
 }
 
 let instance: ReturnType<typeof createAuth> | undefined;
